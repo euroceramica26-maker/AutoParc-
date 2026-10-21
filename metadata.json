@@ -1,0 +1,6 @@
+{
+  "name": "AutoParc Pro - Gestion de Parc Auto & Engins",
+  "description": "Application intégrée de gestion de flotte et engins, inventaire de pièces de rechange, ordres de réparations, alertes de maintenance préventive et rapports d'activité.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
