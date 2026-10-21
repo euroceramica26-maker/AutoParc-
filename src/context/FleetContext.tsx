@@ -42,6 +42,7 @@ interface FleetContextType {
   updateVehicule: (id: string, updates: Partial<Vehicule>) => void;
   deleteVehicule: (id: string) => void;
   updateCompteur: (id: string, nouvelleValeur: number) => void;
+  importVehiculesFromExcel: (newVehicules: Array<Omit<Vehicule, 'id'>>) => number;
   
   // Pieces actions
   addPiece: (piece: Omit<PieceRechange, 'id'>) => PieceRechange;
@@ -298,6 +299,16 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       return v;
     }));
+  };
+
+  const importVehiculesFromExcel = (newVehiculesData: Array<Omit<Vehicule, 'id'>>): number => {
+    if (!newVehiculesData || newVehiculesData.length === 0) return 0;
+    const vehiculesToAdd: Vehicule[] = newVehiculesData.map((item, idx) => ({
+      ...item,
+      id: `vh-imp-${Date.now().toString(36)}-${idx}`
+    }));
+    setVehicules(prev => [...vehiculesToAdd, ...prev]);
+    return vehiculesToAdd.length;
   };
 
   // Actions Pièces de rechange
@@ -702,6 +713,7 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       updateVehicule,
       deleteVehicule,
       updateCompteur,
+      importVehiculesFromExcel,
       addPiece,
       updatePiece,
       deletePiece,

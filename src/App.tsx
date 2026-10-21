@@ -6,6 +6,7 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { VehiclesView } from './components/vehicles/VehiclesView';
 import { VehicleModal } from './components/vehicles/VehicleModal';
 import { VehicleDetailModal } from './components/vehicles/VehicleDetailModal';
+import { ImportExcelVehiclesModal } from './components/vehicles/ImportExcelVehiclesModal';
 import { PartsView } from './components/parts/PartsView';
 import { PartModal } from './components/parts/PartModal';
 import { RestockModal } from './components/parts/RestockModal';
@@ -40,6 +41,7 @@ function FleetApp() {
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [editingVehicule, setEditingVehicule] = useState<Vehicule | null>(null);
   const [detailedVehicule, setDetailedVehicule] = useState<Vehicule | null>(null);
+  const [isImportVehiclesOpen, setIsImportVehiclesOpen] = useState(false);
 
   const [isPartModalOpen, setIsPartModalOpen] = useState(false);
   const [editingPiece, setEditingPiece] = useState<PieceRechange | null>(null);
@@ -175,6 +177,7 @@ function FleetApp() {
               onOpenEditModal={handleOpenEditVehicule}
               onOpenDetailModal={v => setDetailedVehicule(v)}
               onCreateOTForVehicle={vId => handleOpenNewOT(vId)}
+              onOpenImportExcel={() => setIsImportVehiclesOpen(true)}
             />
           )}
 
@@ -238,6 +241,11 @@ function FleetApp() {
           setDetailedVehicule(null);
           handleOpenNewOT(vId);
         }}
+      />
+
+      <ImportExcelVehiclesModal
+        isOpen={isImportVehiclesOpen}
+        onClose={() => setIsImportVehiclesOpen(false)}
       />
 
       <PartModal

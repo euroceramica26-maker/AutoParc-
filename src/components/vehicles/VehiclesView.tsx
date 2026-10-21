@@ -11,8 +11,11 @@ import {
   Eye, 
   Edit2, 
   Trash2,
-  Wrench
+  Wrench,
+  FileSpreadsheet,
+  Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useFleet } from '../../context/FleetContext';
 import { Vehicule, VehiculeType, VehiculeStatut } from '../../types/fleet';
 import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
@@ -22,13 +25,15 @@ interface VehiclesViewProps {
   onOpenEditModal: (vehicule: Vehicule) => void;
   onOpenDetailModal: (vehicule: Vehicule) => void;
   onCreateOTForVehicle: (vehiculeId: string) => void;
+  onOpenImportExcel: () => void;
 }
 
 export const VehiclesView: React.FC<VehiclesViewProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onOpenDetailModal,
-  onCreateOTForVehicle
+  onCreateOTForVehicle,
+  onOpenImportExcel
 }) => {
   const { vehicules, deleteVehicule, updateCompteur } = useFleet();
   
@@ -79,6 +84,129 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
     }
   };
 
+  const getStatutLabel = (st: VehiculeStatut) => {
+    switch (st) {
+      case 'EN_SERVICE': return 'En service';
+      case 'EN_MAINTENANCE': return 'En maintenance';
+      case 'EN_PANNE': return 'En panne';
+      case 'IMMOBILISE': return 'Immobilisé';
+      case 'REFORME': return 'Réformé';
+    }
+  };
+
+  const getTypeLabel = (t: VehiculeType) => {
+    switch (t) {
+      case 'ENGIN': return 'Engin de chantier TP';
+      case 'POIDS_LOURD': return 'Poids Lourd';
+      case 'UTILITAIRE': return 'Utilitaire';
+      case 'VL': return 'Véhicule Léger';
+    }
+  };
+
+  const handleExportExcel = () => {
+    const listToExport = filteredVehicules.length > 0 ? filteredVehicules : vehicules;
+    const excelRows = listToExport.map(v => ({
+      'Code Parc': v.code,
+      'Immatriculation / N° Série': v.immatriculation,
+      'Marque': v.marque,
+      'Modèle': v.modele,
+      'Type Équipement': getTypeLabel(v.type),
+      'Catégorie': v.type,
+      'Unité Compteur': v.compteurType,
+      'Compteur Actuel': v.compteurActuel,
+      'Année': v.annee,
+      'Statut Opérationnel': getStatutLabel(v.statut),
+      'Conducteur / Opérateur': v.conducteur,
+      'Carburant': v.carburant,
+      'Consommation Moyenne': v.consommationMoyenne,
+      'Site d\'affectation': v.siteAffectation,
+      'Date Mise en Service': v.dateMiseEnService,
+      'Prochain Contrôle / VGP': v.dateProchainControle,
+      'Échéance Assurance': v.dateExpirationAssurance,
+      'Observations': v.notes || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    worksheet['!cols'] = [
+      { wch: 14 },
+      { wch: 24 },
+      { wch: 18 },
+      { wch: 30 },
+      { wch: 24 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 16 },
+      { wch: 10 },
+      { wch: 20 },
+      { wch: 26 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 28 },
+      { wch: 20 },
+      { wch: 22 },
+      { wch: 20 },
+      { wch: 35 }
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Parc_Vehicules_Engins');
+    XLSX.writeFile(workbook, `parc_vehicules_engins_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleExportCSV = () => {
+    const listToExport = filteredVehicules.length > 0 ? filteredVehicules : vehicules;
+    const headers = [
+      'Code_Parc',
+      'Immatriculation_Serie',
+      'Marque',
+      'Modele',
+      'Type',
+      'Compteur_Actuel',
+      'Unite_Compteur',
+      'Annee',
+      'Statut',
+      'Conducteur',
+      'Carburant',
+      'Consommation',
+      'Site_Affectation',
+      'Date_Mise_Service',
+      'Prochain_Controle_VGP',
+      'Echeance_Assurance',
+      'Notes'
+    ];
+
+    const rows = listToExport.map(v => [
+      `"${v.code.replace(/"/g, '""')}"`,
+      `"${v.immatriculation.replace(/"/g, '""')}"`,
+      `"${v.marque.replace(/"/g, '""')}"`,
+      `"${v.modele.replace(/"/g, '""')}"`,
+      `"${v.type}"`,
+      v.compteurActuel,
+      `"${v.compteurType}"`,
+      v.annee,
+      `"${v.statut}"`,
+      `"${v.conducteur.replace(/"/g, '""')}"`,
+      `"${v.carburant}"`,
+      `"${v.consommationMoyenne.replace(/"/g, '""')}"`,
+      `"${v.siteAffectation.replace(/"/g, '""')}"`,
+      `"${v.dateMiseEnService}"`,
+      `"${v.dateProchainControle}"`,
+      `"${v.dateExpirationAssurance}"`,
+      `"${(v.notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `parc_vehicules_engins_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -92,13 +220,42 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onOpenAddModal}
-          className="px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Ajouter un équipement</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={onOpenImportExcel}
+            className="px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-700/60 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Importer la liste d'engins et véhicules depuis un fichier Excel (.xlsx / .csv)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Importer Excel</span>
+          </button>
+
+          <button
+            onClick={handleExportExcel}
+            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exporter l'inventaire en fichier Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exporter l'inventaire au format CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={onOpenAddModal}
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Ajouter un équipement</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
