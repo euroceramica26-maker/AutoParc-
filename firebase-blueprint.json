@@ -1,0 +1,150 @@
+{
+  "entities": {
+    "vehicule": {
+      "title": "Vehicule",
+      "description": "Engin ou véhicule de la flotte",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 50 },
+        "immatriculation": { "type": "string", "maxLength": 60 },
+        "marque": { "type": "string", "maxLength": 60 },
+        "modele": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["ENGIN", "POIDS_LOURD", "UTILITAIRE", "VL"] },
+        "compteurType": { "type": "string", "enum": ["km", "heures"] },
+        "compteurActuel": { "type": "number" },
+        "annee": { "type": "number" },
+        "statut": { "type": "string", "enum": ["EN_SERVICE", "EN_MAINTENANCE", "EN_PANNE", "IMMOBILISE", "REFORME"] },
+        "conducteur": { "type": "string", "maxLength": 100 },
+        "carburant": { "type": "string", "enum": ["DIESEL", "ESSENCE", "ELECTRIQUE", "HYBRIDE"] },
+        "consommationMoyenne": { "type": "string", "maxLength": 50 },
+        "siteAffectation": { "type": "string", "maxLength": 100 },
+        "dateMiseEnService": { "type": "string", "maxLength": 20 },
+        "dateProchainControle": { "type": "string", "maxLength": 20 },
+        "dateExpirationAssurance": { "type": "string", "maxLength": 20 },
+        "notes": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["code", "immatriculation", "marque", "modele", "type", "compteurType", "compteurActuel", "statut"]
+    },
+    "pieceRechange": {
+      "title": "PieceRechange",
+      "description": "Pièce détachée en stock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "reference": { "type": "string", "maxLength": 60 },
+        "designation": { "type": "string", "maxLength": 150 },
+        "categorie": { "type": "string", "maxLength": 50 },
+        "stockActuel": { "type": "number" },
+        "stockMin": { "type": "number" },
+        "prixUnitaire": { "type": "number" },
+        "emplacement": { "type": "string", "maxLength": 80 },
+        "fournisseur": { "type": "string", "maxLength": 100 },
+        "compatibilites": { "type": "array" },
+        "dateDernierAppro": { "type": "string", "maxLength": 20 }
+      },
+      "required": ["reference", "designation", "categorie", "stockActuel", "stockMin", "prixUnitaire"]
+    },
+    "mouvementStock": {
+      "title": "MouvementStock",
+      "description": "Historique des mouvements de stock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "pieceId": { "type": "string", "maxLength": 128 },
+        "referencePiece": { "type": "string", "maxLength": 60 },
+        "designationPiece": { "type": "string", "maxLength": 150 },
+        "type": { "type": "string", "enum": ["ENTREE", "SORTIE", "AJUSTEMENT"] },
+        "quantite": { "type": "number" },
+        "date": { "type": "string", "maxLength": 20 },
+        "motif": { "type": "string", "maxLength": 200 },
+        "auteur": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["pieceId", "referencePiece", "type", "quantite", "date"]
+    },
+    "reparation": {
+      "title": "Reparation",
+      "description": "Ordre de travail ou réparation d'un équipement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "numeroOT": { "type": "string", "maxLength": 50 },
+        "vehiculeId": { "type": "string", "maxLength": 128 },
+        "dateDebut": { "type": "string", "maxLength": 20 },
+        "dateFin": { "type": "string", "maxLength": 20 },
+        "type": { "type": "string", "enum": ["PREVENTIF", "CURATIF", "PNEUMATIQUE", "CONTROLE_REGLEMENTAIRE", "VIDANGE"] },
+        "statut": { "type": "string", "enum": ["PLANIFIE", "EN_COURS", "TERMINE", "ANNULE"] },
+        "description": { "type": "string", "maxLength": 500 },
+        "kilometrage": { "type": "number" },
+        "coutPieces": { "type": "number" },
+        "coutMainOeuvre": { "type": "number" },
+        "coutTotal": { "type": "number" },
+        "intervenant": { "type": "string", "maxLength": 100 },
+        "piecesUtilisees": { "type": "array" }
+      },
+      "required": ["numeroOT", "vehiculeId", "dateDebut", "type", "statut", "description"]
+    },
+    "alerteMaintenance": {
+      "title": "AlerteMaintenance",
+      "description": "Alerte de maintenance préventive",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "vehiculeId": { "type": "string", "maxLength": 128 },
+        "typeAlerte": { "type": "string", "enum": ["VIDANGE", "CONTROLE_TECHNIQUE", "ASSURANCE", "PNEUMATIQUE", "VGP_ENGIN", "FILTRATION"] },
+        "titre": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 500 },
+        "severite": { "type": "string", "enum": ["INFO", "AVERTISSEMENT", "CRITIQUE"] },
+        "dateEcheance": { "type": "string", "maxLength": 20 },
+        "kilometrageEcheance": { "type": "number" },
+        "compteurActuelVehicule": { "type": "number" },
+        "messageEcheance": { "type": "string", "maxLength": 200 },
+        "estTraitee": { "type": "boolean" }
+      },
+      "required": ["vehiculeId", "typeAlerte", "titre", "severite", "estTraitee"]
+    },
+    "fleetUser": {
+      "title": "FleetUser",
+      "description": "Utilisateur du système de gestion de parc",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "login": { "type": "string", "maxLength": 60 },
+        "motDePasse": { "type": "string", "maxLength": 100 },
+        "nom": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["ADMIN", "GESTIONNAIRE_PARC", "CHEF_ATELIER", "MAGASINIER"] },
+        "actif": { "type": "boolean" },
+        "dateCreation": { "type": "string", "maxLength": 20 },
+        "dernierAcces": { "type": "string", "maxLength": 30 }
+      },
+      "required": ["login", "nom", "role", "actif"]
+    }
+  },
+  "firestore": {
+    "/vehicules/{vehiculeId}": {
+      "schema": "#/entities/vehicule",
+      "description": "Collection des véhicules et engins de chantier"
+    },
+    "/pieces/{pieceId}": {
+      "schema": "#/entities/pieceRechange",
+      "description": "Catalogue et inventaire des pièces de rechange"
+    },
+    "/mouvements/{mouvementId}": {
+      "schema": "#/entities/mouvementStock",
+      "description": "Historique des mouvements de stock"
+    },
+    "/reparations/{reparationId}": {
+      "schema": "#/entities/reparation",
+      "description": "Ordres de travaux et réparations de maintenance"
+    },
+    "/alertes/{alerteId}": {
+      "schema": "#/entities/alerteMaintenance",
+      "description": "Alertes et rappels de révisions préventives"
+    },
+    "/users/{userId}": {
+      "schema": "#/entities/fleetUser",
+      "description": "Comptes utilisateurs et rôles d'accès"
+    }
+  }
+}

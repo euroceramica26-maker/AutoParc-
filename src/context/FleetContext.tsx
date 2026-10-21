@@ -17,6 +17,26 @@ import {
   INITIAL_ALERTES,
   INITIAL_USERS
 } from '../data/mockData';
+import { 
+  db, 
+  auth, 
+  googleProvider, 
+  testConnection, 
+  handleFirestoreError, 
+  OperationType 
+} from '../services/firebase';
+import { 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  signOut as fbSignOut, 
+  User as FirebaseUser 
+} from 'firebase/auth';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDocs 
+} from 'firebase/firestore';
 
 interface FleetContextType {
   vehicules: Vehicule[];
@@ -68,6 +88,16 @@ interface FleetContextType {
   resetToDefaultData: () => void;
   exportDatabaseJSON: () => string;
   importDatabaseJSON: (jsonStr: string) => boolean;
+
+  // Firebase Cloud Integration
+  isFirebaseConnected: boolean;
+  firebaseUser: FirebaseUser | null;
+  isSyncing: boolean;
+  lastSyncTime: string | null;
+  signInWithGoogle: () => Promise<boolean>;
+  signOutFirebase: () => Promise<void>;
+  syncAllToFirestore: () => Promise<boolean>;
+  loadAllFromFirestore: () => Promise<boolean>;
 
   // Statistiques calculées rapides
   statsGlobales: {
@@ -134,6 +164,49 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}_alertes`);
     return saved ? JSON.parse(saved) : INITIAL_ALERTES;
   });
+
+  // Firebase Cloud State
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
+  // Firebase boot connection test & Auth listener (Mandatory Skill constraint)
+  useEffect(() => {
+    testConnection().then(connected => {
+      setIsFirebaseConnected(connected);
+    });
+
+    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      setFirebaseUser(fbUser);
+      if (fbUser) {
+        setIsFirebaseConnected(true);
+        // Map Google user to fleet user session
+        setUsers(prev => {
+          const exists = prev.find(u => u.email === fbUser.email);
+          if (exists) {
+            setCurrentUser(exists);
+            return prev;
+          }
+          const newGUser: FleetUser = {
+            id: fbUser.uid,
+            login: fbUser.email ? fbUser.email.split('@')[0] : 'admin_google',
+            motDePasse: '••••••••',
+            nom: fbUser.displayName || fbUser.email || 'Utilisateur Google',
+            email: fbUser.email || '',
+            role: fbUser.email === 'euroceramica26@gmail.com' ? 'ADMIN' : 'CHEF_ATELIER',
+            actif: true,
+            dateCreation: new Date().toISOString().split('T')[0],
+            dernierAcces: new Date().toISOString().replace('T', ' ').substring(0, 16)
+          };
+          setCurrentUser(newGUser);
+          return [newGUser, ...prev];
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Sauvegarde automatique localStorage
   useEffect(() => {
@@ -653,6 +726,96 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  // Actions Firebase
+  const signInWithGoogle = async (): Promise<boolean> => {
+    try {
+      const res = await signInWithPopup(auth, googleProvider);
+      return !!res.user;
+    } catch (err) {
+      console.error('Erreur connexion Google Firebase:', err);
+      return false;
+    }
+  };
+
+  const signOutFirebase = async () => {
+    try {
+      await fbSignOut(auth);
+      setFirebaseUser(null);
+    } catch (err) {
+      console.error('Erreur déconnexion Firebase:', err);
+    }
+  };
+
+  const syncAllToFirestore = async (): Promise<boolean> => {
+    setIsSyncing(true);
+    try {
+      for (const v of vehicules) {
+        await setDoc(doc(db, 'vehicules', v.id), v);
+      }
+      for (const p of pieces) {
+        await setDoc(doc(db, 'pieces', p.id), p);
+      }
+      for (const r of reparations) {
+        await setDoc(doc(db, 'reparations', r.id), r);
+      }
+      for (const a of alertes) {
+        await setDoc(doc(db, 'alertes', a.id), a);
+      }
+      for (const u of users) {
+        await setDoc(doc(db, 'users', u.id), u);
+      }
+      for (const m of mouvements) {
+        await setDoc(doc(db, 'mouvements', m.id), m);
+      }
+      setLastSyncTime(new Date().toLocaleTimeString('fr-FR'));
+      setIsSyncing(false);
+      return true;
+    } catch (err) {
+      setIsSyncing(false);
+      handleFirestoreError(err, OperationType.WRITE, 'syncAllToFirestore');
+    }
+  };
+
+  const loadAllFromFirestore = async (): Promise<boolean> => {
+    setIsSyncing(true);
+    try {
+      const vehiculesSnap = await getDocs(collection(db, 'vehicules'));
+      if (!vehiculesSnap.empty) {
+        const loadedVehicules: Vehicule[] = [];
+        vehiculesSnap.forEach(d => loadedVehicules.push(d.data() as Vehicule));
+        setVehicules(loadedVehicules);
+      }
+
+      const piecesSnap = await getDocs(collection(db, 'pieces'));
+      if (!piecesSnap.empty) {
+        const loadedPieces: PieceRechange[] = [];
+        piecesSnap.forEach(d => loadedPieces.push(d.data() as PieceRechange));
+        setPieces(loadedPieces);
+      }
+
+      const reparationsSnap = await getDocs(collection(db, 'reparations'));
+      if (!reparationsSnap.empty) {
+        const loadedReparations: Reparation[] = [];
+        reparationsSnap.forEach(d => loadedReparations.push(d.data() as Reparation));
+        setReparations(loadedReparations);
+      }
+
+      const alertesSnap = await getDocs(collection(db, 'alertes'));
+      if (!alertesSnap.empty) {
+        const loadedAlertes: AlerteMaintenance[] = [];
+        alertesSnap.forEach(d => loadedAlertes.push(d.data() as AlerteMaintenance));
+        setAlertes(loadedAlertes);
+      }
+
+      setLastSyncTime(new Date().toLocaleTimeString('fr-FR'));
+      setIsSyncing(false);
+      return true;
+    } catch (err) {
+      setIsSyncing(false);
+      handleFirestoreError(err, OperationType.GET, 'loadAllFromFirestore');
+    }
+  };
+
   // Calculs statistiques globaux
   const statsGlobales = useMemo(() => {
     const totalVehicules = vehicules.length;
@@ -731,7 +894,15 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       resetToDefaultData,
       exportDatabaseJSON,
       importDatabaseJSON,
-      statsGlobales
+      statsGlobales,
+      isFirebaseConnected,
+      firebaseUser,
+      isSyncing,
+      lastSyncTime,
+      signInWithGoogle,
+      signOutFirebase,
+      syncAllToFirestore,
+      loadAllFromFirestore
     }}>
       {children}
     </FleetContext.Provider>

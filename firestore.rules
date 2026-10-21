@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'euroceramica26@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Connection testing endpoint
+    match /test/{testDoc} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Admin collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isBootstrappedAdmin() && isValidId(adminId);
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(userId);
+      allow update: if isSignedIn() && isValidId(userId);
+      allow delete: if isBootstrappedAdmin() && isValidId(userId);
+    }
+
+    // Vehicules & Engins
+    match /vehicules/{vehiculeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(vehiculeId) &&
+        incoming().code is string && incoming().code.size() <= 50 &&
+        incoming().immatriculation is string && incoming().immatriculation.size() <= 60 &&
+        incoming().marque is string && incoming().marque.size() <= 60 &&
+        incoming().modele is string && incoming().modele.size() <= 100 &&
+        incoming().compteurActuel is number;
+      allow update: if isSignedIn() && isValidId(vehiculeId) &&
+        incoming().compteurActuel is number;
+      allow delete: if isSignedIn() && isValidId(vehiculeId);
+    }
+
+    // Pièces de Rechange
+    match /pieces/{pieceId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(pieceId) &&
+        incoming().reference is string && incoming().reference.size() <= 60 &&
+        incoming().designation is string && incoming().designation.size() <= 150 &&
+        incoming().stockActuel is number &&
+        incoming().prixUnitaire is number;
+      allow update: if isSignedIn() && isValidId(pieceId);
+      allow delete: if isSignedIn() && isValidId(pieceId);
+    }
+
+    // Mouvements de Stock
+    match /mouvements/{mouvementId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(mouvementId) &&
+        incoming().pieceId is string &&
+        incoming().quantite is number;
+      allow update, delete: if isBootstrappedAdmin() && isValidId(mouvementId);
+    }
+
+    // Réparations / Ordres de Travail
+    match /reparations/{reparationId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(reparationId) &&
+        incoming().numeroOT is string && incoming().numeroOT.size() <= 50 &&
+        incoming().vehiculeId is string;
+      allow update: if isSignedIn() && isValidId(reparationId);
+      allow delete: if isSignedIn() && isValidId(reparationId);
+    }
+
+    // Alertes de Maintenance
+    match /alertes/{alerteId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(alerteId) &&
+        incoming().vehiculeId is string &&
+        incoming().titre is string && incoming().titre.size() <= 150;
+      allow update: if isSignedIn() && isValidId(alerteId);
+      allow delete: if isSignedIn() && isValidId(alerteId);
+    }
+  }
+}

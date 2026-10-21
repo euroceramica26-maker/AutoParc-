@@ -11,7 +11,16 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const { resetToDefaultData, exportDatabaseJSON, importDatabaseJSON } = useFleet();
+  const { 
+    resetToDefaultData, 
+    exportDatabaseJSON, 
+    importDatabaseJSON,
+    isFirebaseConnected,
+    isSyncing,
+    lastSyncTime,
+    syncAllToFirestore,
+    loadAllFromFirestore
+  } = useFleet();
   const [importText, setImportText] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -78,6 +87,60 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
               <span>{message.text}</span>
             </div>
           )}
+
+          {/* Firebase Cloud Firestore Section */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-slate-800/50 to-slate-800/40 border border-amber-500/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-xs">
+                  🔥
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white flex items-center gap-2">
+                    <span>Base de Données Cloud Firebase</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      {isFirebaseConnected ? 'Connecté' : 'Initialisé'}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Projet : <span className="font-mono text-slate-300">gen-lang-client-0750271374</span>
+                    {lastSyncTime && (
+                      <span className="text-amber-400 ml-2">· Dernière synchro : {lastSyncTime}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = await syncAllToFirestore();
+                  if (ok) setMessage({ type: 'success', text: 'Toutes les données du parc ont été synchronisées sur Firebase Firestore !' });
+                }}
+                disabled={isSyncing}
+                className="px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>{isSyncing ? 'Synchronisation...' : 'Synchroniser vers Firebase'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = await loadAllFromFirestore();
+                  if (ok) setMessage({ type: 'success', text: 'Données rechargées avec succès depuis Firestore !' });
+                }}
+                disabled={isSyncing}
+                className="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Restaurer depuis Cloud</span>
+              </button>
+            </div>
+          </div>
 
           {/* Export card */}
           <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-800 flex items-center justify-between gap-4">
