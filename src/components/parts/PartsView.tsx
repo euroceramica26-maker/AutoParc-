@@ -19,6 +19,7 @@ import { useFleet } from '../../context/FleetContext';
 import { PieceRechange, CategoriePiece } from '../../types/fleet';
 import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
 import { formatDH } from '../../utils/formatters';
+import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
 
 interface PartsViewProps {
   onOpenAddModal: () => void;
@@ -74,28 +75,150 @@ export const PartsView: React.FC<PartsViewProps> = ({
     return matchesSearch && matchesCategorie && matchesStock;
   });
 
-  // Export CSV avec Dirham Marocain
+  // Export Excel (.xlsx) complet
+  const handleExportExcel = () => {
+    if (activeTab === 'mouvements') {
+      const rowsMouvements = mouvements.map(m => ({
+        'Date': m.date,
+        'Type Flux': m.type === 'ENTREE' ? 'Entrée (+)' : 'Sortie (-)',
+        'Référence Pièce': m.referencePiece,
+        'Désignation': m.designationPiece,
+        'Quantité': m.quantite,
+        'Motif / Contexte': m.motif,
+        'Opérateur / Auteur': m.auteur
+      }));
+
+      exportToExcel([
+        {
+          name: 'Journal_Flux_Pieces',
+          data: rowsMouvements,
+          colWidths: [
+            { wch: 14 },
+            { wch: 16 },
+            { wch: 20 },
+            { wch: 32 },
+            { wch: 12 },
+            { wch: 30 },
+            { wch: 22 }
+          ]
+        }
+      ], `journal_mouvements_stock_${new Date().toISOString().split('T')[0]}`);
+      return;
+    }
+
+    const listToExport = filteredPieces.length > 0 ? filteredPieces : pieces;
+    const excelCatalogue = listToExport.map(p => {
+      const isRupture = p.stockActuel === 0;
+      const isAlert = p.stockActuel <= p.stockMin && !isRupture;
+      const statutStock = isRupture ? 'Rupture' : isAlert ? 'Stock faible' : 'Disponible';
+
+      return {
+        'Référence SKU': p.reference,
+        'Désignation': p.designation,
+        'Catégorie': p.categorie,
+        'Stock Actuel': p.stockActuel,
+        'Stock Minimum': p.stockMin,
+        'État du Stock': statutStock,
+        'Prix Unitaire HT (DH)': p.prixUnitaire,
+        'Valeur Totale Stock (DH)': p.stockActuel * p.prixUnitaire,
+        'Emplacement Magasin': p.emplacement,
+        'Fournisseur': p.fournisseur,
+        'Véhicules Compatibles': (p.compatibilites || []).join(', '),
+        'Dernier Réappro': p.dateDernierAppro || ''
+      };
+    });
+
+    const excelMouvements = mouvements.map(m => ({
+      'Date': m.date,
+      'Type': m.type,
+      'Référence': m.referencePiece,
+      'Désignation': m.designationPiece,
+      'Quantité': m.quantite,
+      'Motif': m.motif,
+      'Opérateur': m.auteur
+    }));
+
+    exportToExcel([
+      {
+        name: 'Catalogue_Pieces',
+        data: excelCatalogue,
+        colWidths: [
+          { wch: 18 },
+          { wch: 32 },
+          { wch: 20 },
+          { wch: 14 },
+          { wch: 14 },
+          { wch: 16 },
+          { wch: 22 },
+          { wch: 24 },
+          { wch: 20 },
+          { wch: 24 },
+          { wch: 32 },
+          { wch: 16 }
+        ]
+      },
+      {
+        name: 'Historique_Mouvements',
+        data: excelMouvements,
+        colWidths: [
+          { wch: 14 },
+          { wch: 12 },
+          { wch: 18 },
+          { wch: 30 },
+          { wch: 12 },
+          { wch: 28 },
+          { wch: 20 }
+        ]
+      }
+    ], `stock_pieces_rechange_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  // Export CSV avec séparateur standard et UTF-8 BOM
   const handleExportCSV = () => {
-    const headers = ['Reference', 'Designation', 'Categorie', 'Stock_Actuel', 'Stock_Min', 'Prix_Unitaire_DH', 'Emplacement', 'Fournisseur'];
-    const rows = filteredPieces.map(p => [
-      `"${p.reference}"`,
-      `"${p.designation}"`,
-      `"${p.categorie}"`,
+    if (activeTab === 'mouvements') {
+      const headers = ['Date', 'Type_Flux', 'Reference', 'Designation', 'Quantite', 'Motif', 'Operateur'];
+      const rows = mouvements.map(m => [
+        m.date,
+        m.type,
+        m.referencePiece,
+        m.designationPiece,
+        m.quantite,
+        m.motif,
+        m.auteur
+      ]);
+      exportToCSV(headers, rows, `journal_mouvements_stock_${new Date().toISOString().split('T')[0]}`);
+      return;
+    }
+
+    const listToExport = filteredPieces.length > 0 ? filteredPieces : pieces;
+    const headers = [
+      'Reference_SKU', 
+      'Designation', 
+      'Categorie', 
+      'Stock_Actuel', 
+      'Stock_Min', 
+      'Prix_Unitaire_DH', 
+      'Valeur_Stock_DH', 
+      'Emplacement', 
+      'Fournisseur', 
+      'Compatibilites', 
+      'Dernier_Appro'
+    ];
+    const rows = listToExport.map(p => [
+      p.reference,
+      p.designation,
+      p.categorie,
       p.stockActuel,
       p.stockMin,
       p.prixUnitaire.toFixed(2),
-      `"${p.emplacement}"`,
-      `"${p.fournisseur}"`
+      (p.stockActuel * p.prixUnitaire).toFixed(2),
+      p.emplacement,
+      p.fournisseur,
+      (p.compatibilites || []).join(', '),
+      p.dateDernierAppro || ''
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `inventaire_pieces_parc_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCSV(headers, rows, `inventaire_pieces_parc_${new Date().toISOString().split('T')[0]}`);
   };
 
   return (
@@ -122,8 +245,18 @@ export const PartsView: React.FC<PartsViewProps> = ({
           </button>
 
           <button
+            onClick={handleExportExcel}
+            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exporter l'inventaire en fichier Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
+
+          <button
             onClick={handleExportCSV}
-            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exporter l'inventaire au format CSV"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
@@ -341,9 +474,29 @@ export const PartsView: React.FC<PartsViewProps> = ({
       ) : (
         /* Journal des mouvements */
         <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">
-          <div className="p-4 border-b border-slate-800 bg-slate-800/40 flex items-center justify-between text-xs">
-            <span className="font-semibold text-white">Historique d'audit des flux de pièces</span>
-            <span className="text-slate-400">{mouvements.length} opérations enregistrées</span>
+          <div className="p-4 border-b border-slate-800 bg-slate-800/40 flex items-center justify-between text-xs flex-wrap gap-2">
+            <div>
+              <span className="font-semibold text-white">Historique d'audit des flux de pièces</span>
+              <span className="text-slate-400 ml-2">({mouvements.length} opérations enregistrées)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportExcel}
+                className="px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                title="Exporter le journal des mouvements en Excel"
+              >
+                <FileSpreadsheet className="w-3 h-3 text-emerald-400" />
+                <span>Export Journal Excel</span>
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                title="Exporter le journal des mouvements en CSV"
+              >
+                <Download className="w-3 h-3" />
+                <span>Export Journal CSV</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

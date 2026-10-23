@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { formatDH } from '../../utils/formatters';
+import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
 
 export const ActivityReportView: React.FC = () => {
   const { vehicules, pieces, reparations, mouvements, statsGlobales } = useFleet();
@@ -55,30 +56,71 @@ export const ActivityReportView: React.FC = () => {
     window.print();
   };
 
+  const handleExportExcel = () => {
+    const excelRows = coutsParVehicule.map(item => ({
+      'Code Équipement': item.vehicule.code,
+      'Immatriculation': item.vehicule.immatriculation,
+      'Marque': item.vehicule.marque,
+      'Modèle': item.vehicule.modele,
+      'Catégorie': item.vehicule.type,
+      'Site d\'affectation': item.vehicule.siteAffectation,
+      'Compteur Actuel': `${item.vehicule.compteurActuel} ${item.vehicule.compteurType}`,
+      'Nombre Interventions': item.nbInterventions,
+      'Dépenses Pièces (DH)': item.piecesCost,
+      'Dépenses Main d\'Œuvre (DH)': item.moCost,
+      'Coût Total Maintenance (DH)': item.totalCost
+    }));
+
+    exportToExcel([
+      {
+        name: `Rapport_${periode}`,
+        data: excelRows,
+        colWidths: [
+          { wch: 16 },
+          { wch: 18 },
+          { wch: 16 },
+          { wch: 20 },
+          { wch: 16 },
+          { wch: 22 },
+          { wch: 18 },
+          { wch: 20 },
+          { wch: 20 },
+          { wch: 22 },
+          { wch: 24 }
+        ]
+      }
+    ], `rapport_activite_maintenance_${periode}_2026`);
+  };
+
   const handleExportCSV = () => {
-    const headers = ['Code', 'Immatriculation', 'Marque', 'Modele', 'Type', 'Site', 'Compteur', 'Nb_Interventions', 'Cout_Pieces_DH', 'Cout_MO_DH', 'Cout_Total_DH'];
+    const headers = [
+      'Code', 
+      'Immatriculation', 
+      'Marque', 
+      'Modele', 
+      'Type', 
+      'Site', 
+      'Compteur', 
+      'Nb_Interventions', 
+      'Cout_Pieces_DH', 
+      'Cout_MO_DH', 
+      'Cout_Total_DH'
+    ];
     const rows = coutsParVehicule.map(item => [
-      `"${item.vehicule.code}"`,
-      `"${item.vehicule.immatriculation}"`,
-      `"${item.vehicule.marque}"`,
-      `"${item.vehicule.modele}"`,
-      `"${item.vehicule.type}"`,
-      `"${item.vehicule.siteAffectation}"`,
-      `"${item.vehicule.compteurActuel} ${item.vehicule.compteurType}"`,
+      item.vehicule.code,
+      item.vehicule.immatriculation,
+      item.vehicule.marque,
+      item.vehicule.modele,
+      item.vehicule.type,
+      item.vehicule.siteAffectation,
+      `${item.vehicule.compteurActuel} ${item.vehicule.compteurType}`,
       item.nbInterventions,
       item.piecesCost.toFixed(2),
       item.moCost.toFixed(2),
       item.totalCost.toFixed(2)
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `rapport_activite_maintenance_${periode}_2026.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToCSV(headers, rows, `rapport_activite_maintenance_${periode}_2026`);
   };
 
   const getPeriodeLabel = () => {
@@ -125,6 +167,15 @@ export const ActivityReportView: React.FC = () => {
               </button>
             ))}
           </div>
+
+          <button
+            onClick={handleExportExcel}
+            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exporter le rapport d'activité en Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
 
           <button
             onClick={handleExportCSV}

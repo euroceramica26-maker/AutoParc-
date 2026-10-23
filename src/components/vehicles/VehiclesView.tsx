@@ -19,6 +19,7 @@ import * as XLSX from 'xlsx';
 import { useFleet } from '../../context/FleetContext';
 import { Vehicule, VehiculeType, VehiculeStatut } from '../../types/fleet';
 import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
+import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
 
 interface VehiclesViewProps {
   onOpenAddModal: () => void;
@@ -126,31 +127,32 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
       'Observations': v.notes || ''
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(excelRows);
-    worksheet['!cols'] = [
-      { wch: 14 },
-      { wch: 24 },
-      { wch: 18 },
-      { wch: 30 },
-      { wch: 24 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 16 },
-      { wch: 10 },
-      { wch: 20 },
-      { wch: 26 },
-      { wch: 14 },
-      { wch: 22 },
-      { wch: 28 },
-      { wch: 20 },
-      { wch: 22 },
-      { wch: 20 },
-      { wch: 35 }
-    ];
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Parc_Vehicules_Engins');
-    XLSX.writeFile(workbook, `parc_vehicules_engins_${new Date().toISOString().split('T')[0]}.xlsx`);
+    exportToExcel([
+      {
+        name: 'Parc_Vehicules_Engins',
+        data: excelRows,
+        colWidths: [
+          { wch: 14 },
+          { wch: 24 },
+          { wch: 18 },
+          { wch: 30 },
+          { wch: 24 },
+          { wch: 16 },
+          { wch: 14 },
+          { wch: 16 },
+          { wch: 10 },
+          { wch: 20 },
+          { wch: 26 },
+          { wch: 14 },
+          { wch: 22 },
+          { wch: 28 },
+          { wch: 20 },
+          { wch: 22 },
+          { wch: 20 },
+          { wch: 35 }
+        ]
+      }
+    ], `parc_vehicules_engins_${new Date().toISOString().split('T')[0]}`);
   };
 
   const handleExportCSV = () => {
@@ -176,35 +178,26 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
     ];
 
     const rows = listToExport.map(v => [
-      `"${v.code.replace(/"/g, '""')}"`,
-      `"${v.immatriculation.replace(/"/g, '""')}"`,
-      `"${v.marque.replace(/"/g, '""')}"`,
-      `"${v.modele.replace(/"/g, '""')}"`,
-      `"${v.type}"`,
+      v.code,
+      v.immatriculation,
+      v.marque,
+      v.modele,
+      v.type,
       v.compteurActuel,
-      `"${v.compteurType}"`,
+      v.compteurType,
       v.annee,
-      `"${v.statut}"`,
-      `"${v.conducteur.replace(/"/g, '""')}"`,
-      `"${v.carburant}"`,
-      `"${v.consommationMoyenne.replace(/"/g, '""')}"`,
-      `"${v.siteAffectation.replace(/"/g, '""')}"`,
-      `"${v.dateMiseEnService}"`,
-      `"${v.dateProchainControle}"`,
-      `"${v.dateExpirationAssurance}"`,
-      `"${(v.notes || '').replace(/"/g, '""')}"`
+      v.statut,
+      v.conducteur,
+      v.carburant,
+      v.consommationMoyenne,
+      v.siteAffectation,
+      v.dateMiseEnService,
+      v.dateProchainControle,
+      v.dateExpirationAssurance,
+      v.notes || ''
     ]);
 
-    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `parc_vehicules_engins_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    exportToCSV(headers, rows, `parc_vehicules_engins_${new Date().toISOString().split('T')[0]}`);
   };
 
   return (

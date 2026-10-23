@@ -12,11 +12,14 @@ import {
   CheckCircle2, 
   Plus, 
   FileText,
-  DollarSign
+  DollarSign,
+  History,
+  Activity
 } from 'lucide-react';
 import { Vehicule, Reparation, AlerteMaintenance } from '../../types/fleet';
 import { useFleet } from '../../context/FleetContext';
 import { formatDH } from '../../utils/formatters';
+import { VehicleTimeline } from './VehicleTimeline';
 
 interface VehicleDetailModalProps {
   vehicule: Vehicule | null;
@@ -34,7 +37,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
   onCreateOTForVehicle
 }) => {
   const { reparations, alertes, updateCompteur, convertirAlerteEnOT } = useFleet();
-  const [activeTab, setActiveTab] = useState<'fiche' | 'reparations' | 'pieces' | 'alertes'>('fiche');
+  const [activeTab, setActiveTab] = useState<'fiche' | 'timeline' | 'reparations' | 'pieces' | 'alertes'>('timeline');
   const [newMileage, setNewMileage] = useState<string>('');
   const [isUpdatingMileage, setIsUpdatingMileage] = useState(false);
 
@@ -113,10 +116,22 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
         </div>
 
         {/* Tab navigation */}
-        <div className="px-6 border-b border-slate-800 flex gap-4 bg-slate-900/40">
+        <div className="px-6 border-b border-slate-800 flex gap-2 sm:gap-4 bg-slate-900/40 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('timeline')}
+            className={`py-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              activeTab === 'timeline' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <History className="w-3.5 h-3.5 text-amber-400" />
+            <span>Timeline / Chronologie</span>
+            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
+              {vehiculeRepairs.length}
+            </span>
+          </button>
           <button
             onClick={() => setActiveTab('fiche')}
-            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer ${
+            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === 'fiche' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -124,18 +139,18 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('reparations')}
-            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'reparations' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>Interventions & Réparations</span>
+            <span>Tableau OT</span>
             <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
               {vehiculeRepairs.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab('pieces')}
-            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'pieces' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -146,7 +161,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('alertes')}
-            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`py-3 text-xs font-medium border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               activeTab === 'alertes' ? 'border-amber-500 text-amber-400' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -161,6 +176,14 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
 
         {/* Tab Content */}
         <div className="p-6 overflow-y-auto flex-1">
+          {activeTab === 'timeline' && (
+            <VehicleTimeline
+              vehicule={vehicule}
+              reparations={reparations}
+              onCreateOT={() => onCreateOTForVehicle(vehicule.id)}
+            />
+          )}
+
           {activeTab === 'fiche' && (
             <div className="space-y-6">
               {/* Odometer quick update box */}
@@ -260,13 +283,13 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   <div>
                     <span className="text-slate-400 block">Dépenses Pièces Détachées</span>
                     <span className="text-base font-bold font-mono text-slate-200">
-                      {totalPartsCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      {formatDH(totalPartsCost)}
                     </span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Dépenses Main d'Œuvre</span>
                     <span className="text-base font-bold font-mono text-slate-200">
-                      {totalLaborCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      {formatDH(totalLaborCost)}
                     </span>
                   </div>
                   <div>
