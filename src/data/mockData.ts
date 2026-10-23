@@ -538,6 +538,41 @@ export const INITIAL_REPARATIONS: Reparation[] = [
     coutPieces: 0.00,
     coutTotal: 140.00,
     remarques: 'Rien à signaler. Véhicule conforme pour présentation au CT le 25/10.'
+  },
+  {
+    id: 'rep-006',
+    numeroOT: 'OT-2026-0045',
+    vehiculeId: 'vh-002',
+    type: 'CORRECTIVE',
+    titre: 'Remplacement plaquettes de frein & filtres - Intervention prioritaire',
+    description: 'Allumage témoin d\'usure garnitures de frein sur essieu avant. Dépose des étriers, remplacement du jeu complet de plaquettes Knorr-Bremse, contrôle d\'épaisseur des disques ventilés, et remplacement préventif de la cartouche filtre gazole séparateur d\'eau.',
+    priorite: 'HAUTE',
+    statut: 'TERMINEE',
+    dateDeclaration: '2026-10-14',
+    datePrevue: '2026-10-15',
+    dateRealisation: '2026-10-15',
+    technicien: 'Atelier Central - Julien Renaud & Équipe Freinage',
+    compteurReleve: 198500,
+    piecesUtilisees: [
+      {
+        pieceId: 'pc-003',
+        reference: 'BRK-PAD-ACTROS',
+        designation: 'Jeu plaquettes de frein essieu AV/AR Knorr-Bremse',
+        quantite: 2,
+        prixUnitaire: 145.00
+      },
+      {
+        pieceId: 'pc-002',
+        reference: 'FLT-FUEL-MB01',
+        designation: 'Cartouche filtre gazole séparateur d\'eau Actros',
+        quantite: 1,
+        prixUnitaire: 54.00
+      }
+    ],
+    coutMainOeuvre: 350.00,
+    coutPieces: 344.00,
+    coutTotal: 694.00,
+    remarques: 'Essai sur banc de freinage et piste concluant. Efficacité nominale certifiée conforme. Remise en service opérationnel validée.'
   }
 ];
 

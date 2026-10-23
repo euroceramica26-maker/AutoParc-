@@ -12,12 +12,22 @@ import {
   Trash2,
   Calendar,
   Layers,
-  DollarSign
+  DollarSign,
+  Printer,
+  Download,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { Reparation, StatutReparation, TypeReparation, PrioriteReparation } from '../../types/fleet';
 import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
 import { formatDH } from '../../utils/formatters';
+import { 
+  printWorkOrderDocument, 
+  downloadWorkOrderDocument, 
+  downloadWorkOrderExcel 
+} from '../../utils/workOrderDocument';
+import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
 
 interface RepairsViewProps {
   onOpenAddModal: () => void;
@@ -93,6 +103,104 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
     }
   };
 
+  const handleExportExcel = () => {
+    const list = filteredRepairs.length > 0 ? filteredRepairs : reparations;
+    const excelRows = list.map(rep => {
+      const v = vehicules.find(item => item.id === rep.vehiculeId);
+      return {
+        'N° OT': rep.numeroOT,
+        'Code Matériel': v?.code || 'N/C',
+        'Immatriculation': v?.immatriculation || 'N/C',
+        'Marque & Modèle': v ? `${v.marque} ${v.modele}` : 'N/C',
+        'Titre Intervention': rep.titre,
+        'Description': rep.description,
+        'Type': rep.type,
+        'Priorité': rep.priorite,
+        'Statut': rep.statut,
+        'Technicien': rep.technicien,
+        'Date Déclaration': rep.dateDeclaration,
+        'Date Réalisation': rep.dateRealisation || rep.datePrevue,
+        'Compteur Relevé': `${rep.compteurReleve} ${v?.compteurType || 'km'}`,
+        'Coût Pièces (DH)': rep.coutPieces,
+        'Coût Main d\'œuvre (DH)': rep.coutMainOeuvre,
+        'Coût Total (DH)': rep.coutTotal,
+        'Pièces Utilisées': (rep.piecesUtilisees || []).map(p => `${p.reference} (x${p.quantite})`).join(' ; '),
+        'Remarques': rep.remarques || ''
+      };
+    });
+
+    exportToExcel([
+      {
+        name: 'Ordres_de_Travail',
+        data: excelRows,
+        colWidths: [
+          { wch: 16 },
+          { wch: 14 },
+          { wch: 18 },
+          { wch: 24 },
+          { wch: 30 },
+          { wch: 36 },
+          { wch: 16 },
+          { wch: 12 },
+          { wch: 14 },
+          { wch: 22 },
+          { wch: 14 },
+          { wch: 14 },
+          { wch: 16 },
+          { wch: 16 },
+          { wch: 18 },
+          { wch: 16 },
+          { wch: 30 },
+          { wch: 25 }
+        ]
+      }
+    ], `Ordres_de_Travail_Flotte_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handleExportCSV = () => {
+    const list = filteredRepairs.length > 0 ? filteredRepairs : reparations;
+    const headers = [
+      'Numero_OT',
+      'Code_Materiel',
+      'Immatriculation',
+      'Marque_Modele',
+      'Titre',
+      'Type',
+      'Priorite',
+      'Statut',
+      'Technicien',
+      'Date_Declaration',
+      'Date_Realisation',
+      'Compteur',
+      'Cout_Pieces_DH',
+      'Cout_MO_DH',
+      'Cout_Total_DH'
+    ];
+
+    const rows = list.map(rep => {
+      const v = vehicules.find(item => item.id === rep.vehiculeId);
+      return [
+        rep.numeroOT,
+        v?.code || '',
+        v?.immatriculation || '',
+        v ? `${v.marque} ${v.modele}` : '',
+        rep.titre,
+        rep.type,
+        rep.priorite,
+        rep.statut,
+        rep.technicien,
+        rep.dateDeclaration,
+        rep.dateRealisation || rep.datePrevue,
+        `${rep.compteurReleve} ${v?.compteurType || 'km'}`,
+        rep.coutPieces.toFixed(2),
+        rep.coutMainOeuvre.toFixed(2),
+        rep.coutTotal.toFixed(2)
+      ];
+    });
+
+    exportToCSV(headers, rows, `Ordres_de_Travail_Flotte_${new Date().toISOString().split('T')[0]}`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -102,17 +210,37 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
             Gestion des Réparations & Ordres de Travail
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Planification des révisions, gestion des pannes et traçabilité des dépenses de maintenance.
+            Planification des révisions, gestion des pannes, impression et téléchargement des bons d'intervention.
           </p>
         </div>
 
-        <button
-          onClick={onOpenAddModal}
-          className="px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Créer un Ordre de Travail</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleExportExcel}
+            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exporter tous les ordres de travail en Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Export Excel</span>
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Exporter tous les ordres de travail en CSV"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
+            onClick={onOpenAddModal}
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Créer un Ordre de Travail</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards (en DH) */}
@@ -190,6 +318,30 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
               <option value="CONTROLE_REGLEMENTAIRE">Contrôle Réglementaire</option>
             </select>
           </div>
+        </div>
+
+        {/* Quick search chips */}
+        <div className="flex items-center gap-2 text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+          <span>Accès rapide :</span>
+          <button
+            onClick={() => setSearchTerm('OT-2026-0045')}
+            className={`px-2 py-0.5 rounded font-mono text-[11px] transition-colors cursor-pointer border ${
+              searchTerm === 'OT-2026-0045'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold shadow-sm'
+                : 'bg-slate-800/90 text-slate-300 hover:text-amber-400 border-slate-700'
+            }`}
+            title="Filtrer immédiatement l'Ordre de Travail OT-2026-0045"
+          >
+            OT-2026-0045 (Actros 2642)
+          </button>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="text-slate-500 hover:text-slate-300 underline cursor-pointer ml-1"
+            >
+              Réinitialiser le filtre ({filteredRepairs.length} résultat{filteredRepairs.length > 1 ? 's' : ''})
+            </button>
+          )}
         </div>
       </div>
 
@@ -286,9 +438,30 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
+                            onClick={() => printWorkOrderDocument(rep, vehicule)}
+                            className="p-1.5 text-slate-400 hover:text-amber-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Imprimer l'Ordre de Travail (A4 Officiel)"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => downloadWorkOrderDocument(rep, vehicule)}
+                            className="p-1.5 text-slate-400 hover:text-sky-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Télécharger l'OT (Document Officiel A4 / PDF)"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => downloadWorkOrderExcel(rep, vehicule)}
+                            className="p-1.5 text-slate-400 hover:text-emerald-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Télécharger l'OT en Excel (.xlsx)"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => onOpenDetailModal(rep)}
                             className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors cursor-pointer"
-                            title="Consulter / Imprimer"
+                            title="Consulter tous les détails"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>

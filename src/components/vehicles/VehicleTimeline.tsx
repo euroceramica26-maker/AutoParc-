@@ -15,6 +15,7 @@ import {
   ArrowUpDown, 
   Plus, 
   Download, 
+  Printer,
   ChevronDown, 
   ChevronUp, 
   ShieldCheck, 
@@ -25,6 +26,11 @@ import {
 import { Vehicule, Reparation, TypeReparation, StatutReparation, PrioriteReparation } from '../../types/fleet';
 import { formatDH } from '../../utils/formatters';
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
+import { 
+  printWorkOrderDocument, 
+  downloadWorkOrderDocument, 
+  downloadWorkOrderExcel 
+} from '../../utils/workOrderDocument';
 
 interface VehicleTimelineProps {
   vehicule: Vehicule;
@@ -473,7 +479,7 @@ export const VehicleTimeline: React.FC<VehicleTimelineProps> = ({
                       {getPriorityBadge(rep.priorite)}
                     </div>
 
-                    {/* Date et relevé compteur */}
+                    {/* Date, relevé compteur & Boutons Impression / Téléchargement */}
                     <div className="flex items-center gap-3 text-xs text-slate-400">
                       <div className="flex items-center gap-1 font-mono">
                         <Calendar className="w-3.5 h-3.5 text-slate-500" />
@@ -482,6 +488,29 @@ export const VehicleTimeline: React.FC<VehicleTimelineProps> = ({
                       <div className="flex items-center gap-1 font-mono text-slate-300">
                         <Gauge className="w-3.5 h-3.5 text-amber-500/80" />
                         <span>{rep.compteurReleve.toLocaleString()} {vehicule.compteurType}</span>
+                      </div>
+                      <div className="flex items-center gap-1 border-l border-slate-800 pl-2">
+                        <button
+                          onClick={() => printWorkOrderDocument(rep, vehicule)}
+                          className="p-1 hover:text-amber-400 text-slate-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                          title="Imprimer cet Ordre de Travail (A4 Officiel)"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => downloadWorkOrderDocument(rep, vehicule)}
+                          className="p-1 hover:text-sky-400 text-slate-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                          title="Télécharger l'OT (Document Officiel A4 / PDF)"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => downloadWorkOrderExcel(rep, vehicule)}
+                          className="p-1 hover:text-emerald-400 text-slate-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                          title="Télécharger l'OT en Excel (.xlsx)"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>

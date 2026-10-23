@@ -14,12 +14,20 @@ import {
   FileText,
   DollarSign,
   History,
-  Activity
+  Activity,
+  Printer,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Vehicule, Reparation, AlerteMaintenance } from '../../types/fleet';
 import { useFleet } from '../../context/FleetContext';
 import { formatDH } from '../../utils/formatters';
 import { VehicleTimeline } from './VehicleTimeline';
+import { 
+  printWorkOrderDocument, 
+  downloadWorkOrderDocument, 
+  downloadWorkOrderExcel 
+} from '../../utils/workOrderDocument';
 
 interface VehicleDetailModalProps {
   vehicule: Vehicule | null;
@@ -336,12 +344,38 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="text-right shrink-0">
-                        <div className="font-mono font-bold text-slate-200">
-                          {formatDH(rep.coutTotal)}
+                      <div className="flex items-center gap-4 self-end sm:self-auto shrink-0">
+                        <div className="text-right">
+                          <div className="font-mono font-bold text-slate-200">
+                            {formatDH(rep.coutTotal)}
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            (Pièces: {formatDH(rep.coutPieces)} · MO: {formatDH(rep.coutMainOeuvre)})
+                          </div>
                         </div>
-                        <div className="text-[11px] text-slate-500">
-                          (Pièces: {formatDH(rep.coutPieces)} · MO: {formatDH(rep.coutMainOeuvre)})
+
+                        <div className="flex items-center gap-1 border-l border-slate-800 pl-3">
+                          <button
+                            onClick={() => printWorkOrderDocument(rep, vehicule)}
+                            className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                            title="Imprimer l'Ordre de Travail (A4 Officiel)"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => downloadWorkOrderDocument(rep, vehicule)}
+                            className="p-1.5 text-slate-400 hover:text-sky-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                            title="Télécharger l'OT (Document Officiel A4 / PDF)"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => downloadWorkOrderExcel(rep, vehicule)}
+                            className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                            title="Télécharger l'OT en Excel (.xlsx)"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     </div>

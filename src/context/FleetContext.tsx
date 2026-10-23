@@ -157,7 +157,20 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [reparations, setReparations] = useState<Reparation[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}_reparations`);
-    return saved ? JSON.parse(saved) : INITIAL_REPARATIONS;
+    if (saved) {
+      try {
+        const parsed: Reparation[] = JSON.parse(saved);
+        const has45 = parsed.some(r => r.numeroOT === 'OT-2026-0045');
+        if (!has45) {
+          const ot45 = INITIAL_REPARATIONS.find(r => r.numeroOT === 'OT-2026-0045');
+          if (ot45) return [ot45, ...parsed];
+        }
+        return parsed;
+      } catch (e) {
+        return INITIAL_REPARATIONS;
+      }
+    }
+    return INITIAL_REPARATIONS;
   });
 
   const [alertes, setAlertes] = useState<AlerteMaintenance[]>(() => {

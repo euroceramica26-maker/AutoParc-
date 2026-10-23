@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   X, 
   Printer, 
@@ -10,11 +10,21 @@ import {
   AlertTriangle, 
   Layers, 
   DollarSign,
-  FileCheck
+  FileCheck,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  ChevronDown
 } from 'lucide-react';
 import { Reparation } from '../../types/fleet';
 import { useFleet } from '../../context/FleetContext';
 import { formatDH } from '../../utils/formatters';
+import { 
+  downloadWorkOrderDocument, 
+  printWorkOrderDocument, 
+  downloadWorkOrderExcel, 
+  downloadWorkOrderCSV 
+} from '../../utils/workOrderDocument';
 
 interface RepairDetailModalProps {
   reparation: Reparation | null;
@@ -30,6 +40,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
   onEdit
 }) => {
   const { vehicules, changerStatutReparation } = useFleet();
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !reparation) return null;
@@ -37,7 +48,22 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
   const vehicule = vehicules.find(v => v.id === reparation.vehiculeId);
 
   const handlePrint = () => {
-    window.print();
+    printWorkOrderDocument(reparation, vehicule);
+  };
+
+  const handleDownloadDoc = () => {
+    downloadWorkOrderDocument(reparation, vehicule);
+    setShowDownloadMenu(false);
+  };
+
+  const handleDownloadXlsx = () => {
+    downloadWorkOrderExcel(reparation, vehicule);
+    setShowDownloadMenu(false);
+  };
+
+  const handleDownloadCsv = () => {
+    downloadWorkOrderCSV(reparation, vehicule);
+    setShowDownloadMenu(false);
   };
 
   return (
@@ -67,15 +93,78 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative">
+            {/* Menu Téléchargement Document */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowDownloadMenu(prev => !prev)}
+                className="px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-700/60 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                title="Télécharger le document d'ordre de travail (PDF / HTML / Excel / CSV)"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Télécharger Document</span>
+                <ChevronDown className="w-3 h-3 text-emerald-400" />
+              </button>
+
+              {showDownloadMenu && (
+                <div 
+                  className="absolute right-0 mt-1 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1 z-50 divide-y divide-slate-800 text-xs"
+                  onMouseLeave={() => setShowDownloadMenu(false)}
+                >
+                  <div className="px-3 py-1.5 text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                    Format du document OT
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadDoc}
+                    className="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2.5 text-slate-200 hover:text-amber-400 cursor-pointer transition-colors"
+                  >
+                    <FileText className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold">Bon d'Intervention (PDF / A4)</div>
+                      <div className="text-[10px] text-slate-400">Document officiel avec visas & signatures</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadXlsx}
+                    className="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2.5 text-slate-200 hover:text-emerald-400 cursor-pointer transition-colors"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold">Fiche OT Complète (Excel .xlsx)</div>
+                      <div className="text-[10px] text-slate-400">Classeur avec fournitures & décompte</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadCsv}
+                    className="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2.5 text-slate-200 hover:text-cyan-400 cursor-pointer transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold">Données OT (CSV Excel FR)</div>
+                      <div className="text-[10px] text-slate-400">Format tableur délimité point-virgule</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Bouton Imprimer direct */}
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="Imprimer le bon d'intervention"
+              className="px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Lancer l'impression directe du bon d'intervention officiel"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Imprimer</span>
+              <Printer className="w-3.5 h-3.5 text-amber-400" />
+              <span>Imprimer OT</span>
             </button>
+
             <button
               onClick={() => onEdit(reparation)}
               className="px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg transition-colors cursor-pointer"
@@ -129,6 +218,49 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
 
         {/* Body content */}
         <div ref={printRef} className="p-6 space-y-6 overflow-y-auto flex-1 text-xs printable-area">
+          {/* Bannière de téléchargement et impression officielle */}
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-slate-800/40 to-slate-800/40 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold text-white block">Document Officiel d'Intervention · {reparation.numeroOT}</span>
+                <span className="text-[11px] text-slate-400">Bon technique complet prêt pour impression papier A4, signature et archivage</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm text-xs"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Imprimer OT</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadDoc}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer text-xs"
+                title="Télécharger le fichier document HTML/PDF officiel"
+              >
+                <Download className="w-3.5 h-3.5 text-amber-400" />
+                <span>Télécharger Document</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadXlsx}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer text-xs"
+                title="Télécharger sous format classeur Excel (.xlsx)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Excel</span>
+              </button>
+            </div>
+          </div>
           {/* Véhicule info card */}
           {vehicule && (
             <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
