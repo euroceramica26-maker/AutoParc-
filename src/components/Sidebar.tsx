@@ -6,7 +6,8 @@ import {
   FileText, 
   BarChart3,
   CalendarCheck2,
-  Users
+  Users,
+  Cloud
 } from 'lucide-react';
 import { useFleet } from '../context/FleetContext';
 import { formatDH } from '../utils/formatters';
@@ -60,6 +61,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: CalendarCheck2,
       badge: pendingAlertsCount > 0 ? `${pendingAlertsCount}` : null,
       badgeColor: statsGlobales.alertesUrgentes > 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-amber-500/20 text-amber-300'
+    },
+    {
+      id: 'drive',
+      label: 'Google Drive (GED)',
+      icon: Cloud,
+      badge: 'Drive',
+      badgeColor: 'bg-amber-500/20 text-amber-300'
     },
     {
       id: 'rapports',

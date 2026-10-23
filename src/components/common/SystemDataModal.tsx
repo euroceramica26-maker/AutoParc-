@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Database, Download, Upload, RotateCcw, Check, AlertCircle } from 'lucide-react';
+import { X, Database, Download, Upload, RotateCcw, Check, AlertCircle, Cloud, ExternalLink } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 
 interface SystemDataModalProps {
@@ -19,9 +19,12 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
     isSyncing,
     lastSyncTime,
     syncAllToFirestore,
-    loadAllFromFirestore
+    loadAllFromFirestore,
+    saveAllFleetToDrive
   } = useFleet();
   const [importText, setImportText] = useState('');
+  const [isSavingDrive, setIsSavingDrive] = useState(false);
+  const [driveLink, setDriveLink] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   if (!isOpen) return null;
@@ -57,6 +60,24 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
       resetToDefaultData();
       setMessage({ type: 'success', text: 'Données de démonstration réinitialisées !' });
       setTimeout(() => onClose(), 1200);
+    }
+  };
+
+  const handleSaveToDrive = async () => {
+    setIsSavingDrive(true);
+    setDriveLink(null);
+    try {
+      const res = await saveAllFleetToDrive();
+      if (res.success) {
+        setMessage({ type: 'success', text: res.message });
+        setDriveLink(res.link || null);
+      } else {
+        setMessage({ type: 'error', text: res.message });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: `Erreur Drive : ${err.message}` });
+    } finally {
+      setIsSavingDrive(false);
     }
   };
 
@@ -140,6 +161,45 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
                 <span>Restaurer depuis Cloud</span>
               </button>
             </div>
+          </div>
+
+          {/* Google Drive Workspace Backup */}
+          <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-800 space-y-2.5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-white flex items-center gap-1.5">
+                  <Cloud className="w-4 h-4 text-amber-500" />
+                  <span>Archivage Cloud Google Drive</span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Sauvegarde l'intégralité du parc dans le dossier « AutoParc Pro - Flotte & Documents » de votre Google Drive.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveToDrive}
+                disabled={isSavingDrive}
+                className="px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
+              >
+                <Cloud className={`w-3.5 h-3.5 ${isSavingDrive ? 'animate-spin' : ''}`} />
+                <span>{isSavingDrive ? 'Archivage...' : 'Archiver sur Drive'}</span>
+              </button>
+            </div>
+
+            {driveLink && (
+              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                <span className="text-emerald-400">Sauvegarde archivée sur votre Drive</span>
+                <a
+                  href={driveLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-amber-400 hover:underline"
+                >
+                  <span>Ouvrir le fichier</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Export card */}

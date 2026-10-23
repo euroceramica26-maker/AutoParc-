@@ -19,6 +19,7 @@ import { NewAlertModal } from './components/maintenance/NewAlertModal';
 import { ActivityReportView } from './components/reports/ActivityReportView';
 import { UsersView } from './components/users/UsersView';
 import { UserModal } from './components/users/UserModal';
+import { GoogleDriveView } from './components/drive/GoogleDriveView';
 import { LoginModal } from './components/auth/LoginModal';
 import { SystemDataModal } from './components/common/SystemDataModal';
 import { Vehicule, PieceRechange, Reparation, FleetUser } from './types/fleet';
@@ -203,6 +204,10 @@ function FleetApp() {
               onOpenNewAlertModal={() => setIsAlertModalOpen(true)}
               onNavigateToOT={() => setCurrentTab('reparations')}
             />
+          )}
+
+          {currentTab === 'drive' && (
+            <GoogleDriveView />
           )}
 
           {currentTab === 'rapports' && (

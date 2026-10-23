@@ -16,7 +16,9 @@ import {
   Printer,
   Download,
   FileSpreadsheet,
-  FileText
+  FileText,
+  Cloud,
+  ExternalLink
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { Reparation, StatutReparation, TypeReparation, PrioriteReparation } from '../../types/fleet';
@@ -27,6 +29,7 @@ import {
   downloadWorkOrderDocument, 
   downloadWorkOrderExcel 
 } from '../../utils/workOrderDocument';
+import { saveWorkOrderToDrive } from '../../services/googleDriveService';
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
 
 interface RepairsViewProps {
@@ -53,6 +56,8 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [selectedPriorite, setSelectedPriorite] = useState<string>('ALL');
   const [repairToDelete, setRepairToDelete] = useState<Reparation | null>(null);
+  const [savingDriveOTId, setSavingDriveOTId] = useState<string | null>(null);
+  const [driveToast, setDriveToast] = useState<{ message: string; link?: string } | null>(null);
 
   const filteredRepairs = reparations.filter(r => {
     const vehicule = vehicules.find(v => v.id === r.vehiculeId);
@@ -268,6 +273,27 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
         </div>
       </div>
 
+      {/* Drive Toast Notification */}
+      {driveToast && (
+        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-800 text-emerald-300 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <Cloud className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{driveToast.message}</span>
+          </div>
+          {driveToast.link && (
+            <a
+              href={driveToast.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-semibold underline text-white hover:text-amber-300 cursor-pointer shrink-0"
+            >
+              <span>Consulter sur Google Drive</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Filter and Search Bar */}
       <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
@@ -457,6 +483,28 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
                             title="Télécharger l'OT en Excel (.xlsx)"
                           >
                             <FileSpreadsheet className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              setSavingDriveOTId(rep.id);
+                              try {
+                                const file = await saveWorkOrderToDrive(rep, vehicule);
+                                setDriveToast({
+                                  message: `L'ordre de travail ${rep.numeroOT} a été archivé avec succès sur Google Drive !`,
+                                  link: file.webViewLink
+                                });
+                                setTimeout(() => setDriveToast(null), 8000);
+                              } catch (err: any) {
+                                alert(`Erreur Google Drive : ${err.message}`);
+                              } finally {
+                                setSavingDriveOTId(null);
+                              }
+                            }}
+                            disabled={savingDriveOTId === rep.id}
+                            className="p-1.5 text-slate-400 hover:text-amber-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Archiver cet Ordre de Travail sur Google Drive"
+                          >
+                            <Cloud className={`w-3.5 h-3.5 ${savingDriveOTId === rep.id ? 'animate-spin text-amber-500' : ''}`} />
                           </button>
                           <button
                             onClick={() => onOpenDetailModal(rep)}

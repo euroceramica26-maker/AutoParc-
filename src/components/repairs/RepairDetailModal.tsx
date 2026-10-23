@@ -14,7 +14,10 @@ import {
   Download,
   FileText,
   FileSpreadsheet,
-  ChevronDown
+  ChevronDown,
+  Cloud,
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react';
 import { Reparation } from '../../types/fleet';
 import { useFleet } from '../../context/FleetContext';
@@ -25,6 +28,7 @@ import {
   downloadWorkOrderExcel, 
   downloadWorkOrderCSV 
 } from '../../utils/workOrderDocument';
+import { saveWorkOrderToDrive } from '../../services/googleDriveService';
 
 interface RepairDetailModalProps {
   reparation: Reparation | null;
@@ -41,6 +45,8 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
 }) => {
   const { vehicules, changerStatutReparation } = useFleet();
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [isSavingToDrive, setIsSavingToDrive] = useState(false);
+  const [driveLink, setDriveLink] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !reparation) return null;
@@ -64,6 +70,20 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
   const handleDownloadCsv = () => {
     downloadWorkOrderCSV(reparation, vehicule);
     setShowDownloadMenu(false);
+  };
+
+  const handleSaveToDrive = async () => {
+    setIsSavingToDrive(true);
+    setDriveLink(null);
+    try {
+      const file = await saveWorkOrderToDrive(reparation, vehicule);
+      setDriveLink(file.webViewLink || null);
+      setShowDownloadMenu(false);
+    } catch (err: any) {
+      alert(`Erreur Google Drive : ${err.message}`);
+    } finally {
+      setIsSavingToDrive(false);
+    }
   };
 
   return (
@@ -149,6 +169,19 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
                     <div>
                       <div className="font-semibold">Données OT (CSV Excel FR)</div>
                       <div className="text-[10px] text-slate-400">Format tableur délimité point-virgule</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveToDrive}
+                    disabled={isSavingToDrive}
+                    className="w-full px-3 py-2 text-left hover:bg-slate-800 flex items-center gap-2.5 text-slate-200 hover:text-amber-400 cursor-pointer transition-colors border-t border-slate-800"
+                  >
+                    <Cloud className="w-4 h-4 text-amber-500 shrink-0" />
+                    <div>
+                      <div className="font-semibold">{isSavingToDrive ? 'Envoi en cours...' : 'Archiver sur Google Drive'}</div>
+                      <div className="text-[10px] text-slate-400">Dossier cloud dédié « Ordres de Travail »</div>
                     </div>
                   </button>
                 </div>
@@ -259,8 +292,39 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Excel</span>
               </button>
+
+              <button
+                type="button"
+                onClick={handleSaveToDrive}
+                disabled={isSavingToDrive}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-amber-400 border border-slate-700 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer text-xs"
+                title="Archiver cet ordre de travail sur Google Drive"
+              >
+                <Cloud className={`w-3.5 h-3.5 text-amber-500 ${isSavingToDrive ? 'animate-spin' : ''}`} />
+                <span>{isSavingToDrive ? 'Archivage...' : 'Archiver sur Drive'}</span>
+              </button>
             </div>
           </div>
+
+          {/* Drive file link toast if saved */}
+          {driveLink && (
+            <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-800 text-emerald-300 flex items-center justify-between gap-3 text-xs">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Document archivé avec succès dans votre Google Drive (dossier Ordres de Travail) !</span>
+              </span>
+              <a
+                href={driveLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-semibold underline text-white hover:text-amber-300 cursor-pointer shrink-0"
+              >
+                <span>Consulter sur Drive</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
+
           {/* Véhicule info card */}
           {vehicule && (
             <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -8,7 +8,8 @@ import {
   LogOut,
   UserCheck,
   Shield,
-  Key
+  Key,
+  Cloud
 } from 'lucide-react';
 import { useFleet } from '../context/FleetContext';
 
@@ -38,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'pieces': return 'Pièces de Rechange & Stocks';
       case 'reparations': return 'Réparations & Ordres de Travail';
       case 'maintenance': return 'Alertes Maintenance Périodique';
+      case 'drive': return 'Google Drive & Archivage GED';
       case 'rapports': return 'Rapports d\'Activité & Analyses';
       case 'utilisateurs': return 'Gestion des Utilisateurs & Droits';
       default: return 'Gestion de Parc';
@@ -152,6 +154,17 @@ export const Header: React.FC<HeaderProps> = ({
           {totalUrgentNotifications > 0 && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
           )}
+        </button>
+
+        {/* Google Drive GED */}
+        <button
+          onClick={() => onSelectTab('drive')}
+          className={`p-2 rounded-lg transition-colors cursor-pointer ${
+            currentTab === 'drive' ? 'text-amber-400 bg-slate-800' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+          title="Google Drive & Archivage GED"
+        >
+          <Cloud className="w-4 h-4 text-amber-500" />
         </button>
 
         {/* Données système & Sauvegarde */}

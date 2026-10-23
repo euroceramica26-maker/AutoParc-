@@ -21,13 +21,19 @@ import {
   db, 
   auth, 
   googleProvider, 
+  googleSignIn,
+  logoutGoogle,
+  getCachedAccessToken,
   testConnection, 
   handleFirestoreError, 
   OperationType 
 } from '../services/firebase';
 import { 
+  saveWorkOrderToDrive,
+  saveFleetBackupToDrive
+} from '../services/googleDriveService';
+import { 
   onAuthStateChanged, 
-  signInWithPopup, 
   signOut as fbSignOut, 
   User as FirebaseUser 
 } from 'firebase/auth';
@@ -89,7 +95,7 @@ interface FleetContextType {
   exportDatabaseJSON: () => string;
   importDatabaseJSON: (jsonStr: string) => boolean;
 
-  // Firebase Cloud Integration
+  // Firebase & Google Drive Integration
   isFirebaseConnected: boolean;
   firebaseUser: FirebaseUser | null;
   isSyncing: boolean;
@@ -98,6 +104,8 @@ interface FleetContextType {
   signOutFirebase: () => Promise<void>;
   syncAllToFirestore: () => Promise<boolean>;
   loadAllFromFirestore: () => Promise<boolean>;
+  saveOTToDrive: (reparationId: string) => Promise<{ success: boolean; file?: any; message: string; link?: string }>;
+  saveAllFleetToDrive: () => Promise<{ success: boolean; file?: any; message: string; link?: string }>;
 
   // Statistiques calculées rapides
   statsGlobales: {
@@ -749,23 +757,69 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // Actions Firebase
+  // Actions Firebase & Google Drive
   const signInWithGoogle = async (): Promise<boolean> => {
     try {
-      const res = await signInWithPopup(auth, googleProvider);
-      return !!res.user;
+      const res = await googleSignIn();
+      if (res?.user) {
+        setFirebaseUser(res.user);
+        return true;
+      }
+      return false;
     } catch (err) {
-      console.error('Erreur connexion Google Firebase:', err);
+      console.error('Erreur connexion Google Firebase / Drive:', err);
       return false;
     }
   };
 
   const signOutFirebase = async () => {
     try {
-      await fbSignOut(auth);
+      await logoutGoogle();
       setFirebaseUser(null);
     } catch (err) {
       console.error('Erreur déconnexion Firebase:', err);
+    }
+  };
+
+  const saveOTToDrive = async (reparationId: string) => {
+    try {
+      const rep = reparations.find(r => r.id === reparationId);
+      if (!rep) {
+        return { success: false, message: 'Ordre de travail introuvable' };
+      }
+      const vehicule = vehicules.find(v => v.id === rep.vehiculeId);
+      const file = await saveWorkOrderToDrive(rep, vehicule);
+      return { 
+        success: true, 
+        file, 
+        message: `L'ordre de travail ${rep.numeroOT} a été sauvegardé sur Google Drive avec succès !`,
+        link: file.webViewLink 
+      };
+    } catch (err: any) {
+      console.error('Erreur sauvegarde Google Drive OT:', err);
+      return { 
+        success: false, 
+        message: err.message || 'Erreur lors de la sauvegarde sur Google Drive' 
+      };
+    }
+  };
+
+  const saveAllFleetToDrive = async () => {
+    try {
+      const json = exportDatabaseJSON();
+      const file = await saveFleetBackupToDrive(json);
+      return {
+        success: true,
+        file,
+        message: 'La sauvegarde complète de la flotte a été archivée sur Google Drive !',
+        link: file.webViewLink
+      };
+    } catch (err: any) {
+      console.error('Erreur sauvegarde complète Google Drive:', err);
+      return {
+        success: false,
+        message: err.message || 'Erreur lors de la sauvegarde sur Google Drive'
+      };
     }
   };
 
@@ -925,7 +979,9 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       signInWithGoogle,
       signOutFirebase,
       syncAllToFirestore,
-      loadAllFromFirestore
+      loadAllFromFirestore,
+      saveOTToDrive,
+      saveAllFleetToDrive
     }}>
       {children}
     </FleetContext.Provider>
