@@ -523,8 +523,8 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const nextOTNumber = `OT-2026-${String(reparations.length + 45).padStart(4, '0')}`;
     
     // Calcul coût des pièces
-    const coutPieces = data.piecesUtilisees.reduce((sum, item) => sum + (item.prixUnitaire * item.quantite), 0);
-    const coutTotal = Number((coutPieces + data.coutMainOeuvre).toFixed(2));
+    const coutPieces = (data.piecesUtilisees || []).reduce((sum, item) => sum + (Number(item.prixUnitaire || 0) * Number(item.quantite || 0)), 0);
+    const coutTotal = Number((coutPieces + Number(data.coutMainOeuvre || 0)).toFixed(2));
 
     const newReparation: Reparation = {
       ...data,
@@ -590,14 +590,24 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const merged = { ...r, ...updates };
         // Recalcul automatique des coûts
         if (updates.piecesUtilisees || updates.coutMainOeuvre !== undefined) {
-          const coutPieces = merged.piecesUtilisees.reduce((sum, item) => sum + (item.prixUnitaire * item.quantite), 0);
+          const coutPieces = (merged.piecesUtilisees || []).reduce((sum, item) => sum + (Number(item.prixUnitaire || 0) * Number(item.quantite || 0)), 0);
           merged.coutPieces = Number(coutPieces.toFixed(2));
-          merged.coutTotal = Number((merged.coutPieces + merged.coutMainOeuvre).toFixed(2));
+          merged.coutTotal = Number((merged.coutPieces + Number(merged.coutMainOeuvre || 0)).toFixed(2));
         }
         return merged;
       }
       return r;
     }));
+
+    if (updates.statut === 'TERMINEE' && updates.vehiculeId) {
+      updateVehicule(updates.vehiculeId, { statut: 'EN_SERVICE' });
+    } else if (updates.statut === 'EN_COURS' && updates.vehiculeId) {
+      updateVehicule(updates.vehiculeId, { statut: 'EN_MAINTENANCE' });
+    }
+
+    if (updates.compteurReleve && updates.compteurReleve > 0 && updates.vehiculeId) {
+      updateCompteur(updates.vehiculeId, updates.compteurReleve);
+    }
   };
 
   const deleteReparation = (id: string) => {
