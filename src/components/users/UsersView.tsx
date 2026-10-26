@@ -12,11 +12,13 @@ import {
   Lock,
   Phone,
   Mail,
-  UserCheck
+  UserCheck,
+  RotateCcw
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { FleetUser, UserRole } from '../../types/fleet';
 import { ConfirmDeleteModal } from '../common/ConfirmDeleteModal';
+import { AdminResetModal } from '../common/AdminResetModal';
 
 interface UsersViewProps {
   onOpenAddUser: () => void;
@@ -31,6 +33,8 @@ export const UsersView: React.FC<UsersViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [userToDelete, setUserToDelete] = useState<FleetUser | null>(null);
+  const [isAdminResetOpen, setIsAdminResetOpen] = useState(false);
+  const [resetSuccessNotice, setResetSuccessNotice] = useState<string | null>(null);
 
   const filteredUsers = users.filter(u => {
     const matchesSearch = 
@@ -115,10 +119,37 @@ export const UsersView: React.FC<UsersViewProps> = ({
           </div>
         </div>
 
-        <div className="text-[11px] text-slate-400">
-          Connecté actuellement sous : <strong className="text-white">{currentUser?.nom || 'Non connecté'}</strong> ({currentUser?.role})
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="text-[11px] text-slate-400">
+            Connecté actuellement sous : <strong className="text-white">{currentUser?.nom || 'Non connecté'}</strong> ({currentUser?.role})
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsAdminResetOpen(true)}
+            className="px-3 py-1.5 text-xs font-semibold text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-900/70 border border-rose-800/60 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-sm w-fit"
+            title="Réinitialiser toutes les données de la flotte (mot de passe administrateur obligatoire)"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+            <span>Réinitialiser les Données</span>
+          </button>
         </div>
       </div>
+
+      {resetSuccessNotice && (
+        <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs flex items-center justify-between gap-2 shadow-md">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{resetSuccessNotice}</span>
+          </div>
+          <button
+            onClick={() => setResetSuccessNotice(null)}
+            className="text-slate-400 hover:text-white text-xs px-2 py-0.5"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -318,6 +349,16 @@ export const UsersView: React.FC<UsersViewProps> = ({
           }
         }}
         onCancel={() => setUserToDelete(null)}
+      />
+
+      {/* Modal sécurisée réinitialisation avec mot de passe admin */}
+      <AdminResetModal
+        isOpen={isAdminResetOpen}
+        onClose={() => setIsAdminResetOpen(false)}
+        onSuccess={(msg) => {
+          setResetSuccessNotice(msg);
+          setTimeout(() => setResetSuccessNotice(null), 5000);
+        }}
       />
     </div>
   );

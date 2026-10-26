@@ -92,6 +92,8 @@ interface FleetContextType {
   
   // Système & Données
   resetToDefaultData: () => void;
+  verifyAdminPassword: (password: string) => boolean;
+  resetToDefaultDataWithPassword: (password: string) => { success: boolean; message: string };
   exportDatabaseJSON: () => string;
   importDatabaseJSON: (jsonStr: string) => boolean;
 
@@ -693,22 +695,51 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return rep;
   };
 
-  // Réinitialiser les données de démo
+  // Vérifier le mot de passe administrateur pour actions sensibles
+  const verifyAdminPassword = (password: string): boolean => {
+    if (!password) return false;
+    // Si l'utilisateur connecté est admin, vérifier son mot de passe
+    if (currentUser?.role === 'ADMIN' && currentUser.motDePasse === password) {
+      return true;
+    }
+    // Sinon vérifier si le mot de passe correspond à un admin actif
+    return users.some(u => u.role === 'ADMIN' && u.actif && u.motDePasse === password);
+  };
+
+  // Réinitialiser les données de démo (brut)
   const resetToDefaultData = () => {
     setUsers(INITIAL_USERS);
-    setCurrentUser(INITIAL_USERS[0]);
+    // Conserver la session de l'admin actuel ou initial
+    const activeAdmin = currentUser?.role === 'ADMIN' ? currentUser : INITIAL_USERS[0];
+    setCurrentUser(activeAdmin);
     setVehicules(INITIAL_VEHICULES);
     setPieces(INITIAL_PIECES);
     setMouvements(INITIAL_MOUVEMENTS);
     setReparations(INITIAL_REPARATIONS);
     setAlertes(INITIAL_ALERTES);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}_users`);
-    localStorage.removeItem(`${STORAGE_KEY_PREFIX}_session`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}_vehicules`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}_pieces`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}_mouvements`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}_reparations`);
     localStorage.removeItem(`${STORAGE_KEY_PREFIX}_alertes`);
+  };
+
+  // Réinitialisation sécurisée avec vérification de mot de passe administrateur
+  const resetToDefaultDataWithPassword = (password: string): { success: boolean; message: string } => {
+    if (!verifyAdminPassword(password)) {
+      return {
+        success: false,
+        message: 'Mot de passe administrateur incorrect. Réinitialisation refusée.'
+      };
+    }
+
+    resetToDefaultData();
+
+    return {
+      success: true,
+      message: 'Toutes les données du parc ont été réinitialisées avec succès aux valeurs par défaut.'
+    };
   };
 
   // Exporter en JSON
@@ -959,6 +990,8 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       marquerAlerteTraitee,
       convertirAlerteEnOT,
       resetToDefaultData,
+      verifyAdminPassword,
+      resetToDefaultDataWithPassword,
       exportDatabaseJSON,
       importDatabaseJSON,
       statsGlobales,

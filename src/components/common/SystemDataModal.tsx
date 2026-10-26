@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Database, Download, Upload, RotateCcw, Check, AlertCircle, Cloud, ExternalLink } from 'lucide-react';
+import { X, Database, Download, Upload, RotateCcw, Check, AlertCircle, Cloud, ExternalLink, ShieldAlert } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
+import { AdminResetModal } from './AdminResetModal';
 
 interface SystemDataModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
   const [isSavingDrive, setIsSavingDrive] = useState(false);
   const [driveLink, setDriveLink] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [isAdminResetOpen, setIsAdminResetOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -56,11 +58,7 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
   };
 
   const handleReset = () => {
-    if (confirm('Voulez-vous vraiment réinitialiser toutes les données aux valeurs de démonstration ? Toutes vos modifications non exportées seront écrasées.')) {
-      resetToDefaultData();
-      setMessage({ type: 'success', text: 'Données de démonstration réinitialisées !' });
-      setTimeout(() => onClose(), 1200);
-    }
+    setIsAdminResetOpen(true);
   };
 
   const handleSaveToDrive = async () => {
@@ -245,12 +243,13 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
             <div>
               <h3 className="font-semibold text-rose-300">Réinitialiser les données de démo</h3>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Rétablit le jeu de données initial (8 engins/véhicules, pièces, ordres de travaux et alertes).
+                Rétablit le jeu de données initial (mot de passe administrateur requis).
               </p>
             </div>
             <button
               onClick={handleReset}
               className="px-3 py-1.5 text-xs font-semibold bg-rose-900/40 hover:bg-rose-800/50 text-rose-200 border border-rose-700/50 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+              title="Réinitialiser avec mot de passe administrateur"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Réinitialiser</span>
@@ -258,6 +257,15 @@ export const SystemDataModal: React.FC<SystemDataModalProps> = ({
           </div>
         </div>
       </div>
+
+      <AdminResetModal
+        isOpen={isAdminResetOpen}
+        onClose={() => setIsAdminResetOpen(false)}
+        onSuccess={(msg) => {
+          setMessage({ type: 'success', text: msg });
+          setTimeout(() => onClose(), 1200);
+        }}
+      />
     </div>
   );
 };
