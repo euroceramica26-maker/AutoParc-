@@ -10,15 +10,19 @@ import {
   Layers, 
   DollarSign, 
   CheckCircle2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { formatDH } from '../../utils/formatters';
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils';
+import { downloadActivityReportPDF } from '../../utils/activityReportPdf';
 
 export const ActivityReportView: React.FC = () => {
-  const { vehicules, pieces, reparations, mouvements, statsGlobales } = useFleet();
+  const { vehicules, pieces, reparations, mouvements, statsGlobales, currentUser } = useFleet();
   const [periode, setPeriode] = useState<'MOIS' | 'TRIMESTRE' | 'ANNEE' | 'TOUT'>('MOIS');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [pdfSuccessNotice, setPdfSuccessNotice] = useState<string | null>(null);
 
   // Filtrer les interventions selon la période
   const filteredRepairs = reparations.filter(r => {
@@ -123,6 +127,38 @@ export const ActivityReportView: React.FC = () => {
     exportToCSV(headers, rows, `rapport_activite_maintenance_${periode}_2026`);
   };
 
+  const handleExportPDF = () => {
+    setIsExportingPDF(true);
+    try {
+      downloadActivityReportPDF({
+        periodeLabel: getPeriodeLabel(),
+        periodeCode: periode,
+        dateEdition: new Date().toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }),
+        totalDepenses,
+        totalPieces,
+        totalMO,
+        otTermines,
+        otEnCours,
+        tauxDisponibilite: statsGlobales.tauxDisponibilite,
+        totalVehicules: vehicules.length,
+        coutsParVehicule,
+        filteredRepairs,
+        vehicules,
+        currentUserNom: currentUser?.nom
+      });
+      setPdfSuccessNotice(`Synthèse mensuelle et analyse des coûts (${getPeriodeLabel()}) exportée en PDF.`);
+      setTimeout(() => setPdfSuccessNotice(null), 5000);
+    } catch (err) {
+      console.error('Erreur lors de la génération du PDF:', err);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   const getPeriodeLabel = () => {
     switch (periode) {
       case 'MOIS': return 'Mois en cours (Octobre 2026)';
@@ -145,7 +181,7 @@ export const ActivityReportView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Period selector */}
           <div className="flex items-center gap-1 p-1 bg-slate-800/80 rounded-lg">
             {[
@@ -167,6 +203,17 @@ export const ActivityReportView: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* Bouton Export PDF */}
+          <button
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="px-3.5 py-1.5 text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+            title="Télécharger la synthèse mensuelle de maintenance et de coûts au format PDF"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>{isExportingPDF ? 'Génération...' : 'Exporter PDF'}</span>
+          </button>
 
           <button
             onClick={handleExportExcel}
@@ -190,17 +237,33 @@ export const ActivityReportView: React.FC = () => {
             className="px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Imprimer Rapport</span>
+            <span>Imprimer</span>
           </button>
         </div>
       </div>
+
+      {/* Notification toast si PDF généré */}
+      {pdfSuccessNotice && (
+        <div className="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-md animate-fade-in">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{pdfSuccessNotice}</span>
+          </div>
+          <button 
+            onClick={() => setPdfSuccessNotice(null)}
+            className="text-slate-400 hover:text-white text-xs px-2 py-0.5"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
 
       {/* Printable Report Wrapper */}
       <div className="printable-report space-y-6">
         {/* En-tête officiel du rapport */}
         <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-white text-base">RAPPORT DE GESTION DE FLOTTE & MAINTENANCE</span>
               <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
                 {getPeriodeLabel()}
@@ -211,9 +274,17 @@ export const ActivityReportView: React.FC = () => {
             </p>
           </div>
 
-          <div className="text-left sm:text-right text-xs">
+          <div className="flex flex-col sm:items-end gap-2 text-xs">
             <div className="text-slate-400">Flotte sous gestion : <strong className="text-white font-mono">{vehicules.length} engins & véhicules</strong></div>
             <div className="text-slate-400">Taux de disponibilité actuel : <strong className="text-emerald-400 font-mono">{statsGlobales.tauxDisponibilite}%</strong></div>
+            <button
+              onClick={handleExportPDF}
+              disabled={isExportingPDF}
+              className="mt-1 px-3 py-1 text-[11px] font-semibold text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-900/60 border border-rose-800/60 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer w-fit"
+            >
+              <FileText className="w-3.5 h-3.5 text-rose-400" />
+              <span>Télécharger Synthèse PDF (A4)</span>
+            </button>
           </div>
         </div>
 

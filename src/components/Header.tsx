@@ -220,6 +220,14 @@ export const Header: React.FC<HeaderProps> = ({
               </p>
             </div>
           </button>
+
+          <button
+            onClick={logout}
+            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
+            title="Se déconnecter (fermer la session)"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>

@@ -135,18 +135,8 @@ export const FleetProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return saved ? JSON.parse(saved) : INITIAL_USERS;
   });
 
-  const [currentUser, setCurrentUser] = useState<FleetUser | null>(() => {
-    const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}_session`);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        // Fallback below
-      }
-    }
-    // Default to ouaradtech admin
-    return INITIAL_USERS[0];
-  });
+  // Always require login on app startup
+  const [currentUser, setCurrentUser] = useState<FleetUser | null>(null);
 
   const [vehicules, setVehicules] = useState<Vehicule[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}_vehicules`);

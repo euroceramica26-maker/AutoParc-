@@ -26,6 +26,7 @@ import { Vehicule, PieceRechange, Reparation, FleetUser } from './types/fleet';
 
 function FleetApp() {
   const { 
+    currentUser,
     addVehicule, 
     updateVehicule, 
     addPiece, 
@@ -139,6 +140,10 @@ function FleetApp() {
       addUser(data);
     }
   };
+
+  if (!currentUser) {
+    return <LoginModal isOpen={true} isGate={true} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">

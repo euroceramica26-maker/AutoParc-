@@ -1,14 +1,18 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// CRITICAL: The app will break without specifying firestoreDatabaseId when custom database ID is configured
-export const db = firebaseConfig.firestoreDatabaseId
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+// CRITICAL: Specify firestoreDatabaseId and enable experimentalForceLongPolling to avoid backend timeouts in sandboxed iframes
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalForceLongPolling: true,
+  },
+  firebaseConfig.firestoreDatabaseId || undefined
+);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -132,3 +136,6 @@ export async function testConnection(): Promise<boolean> {
     return false;
   }
 }
+
+testConnection();
+

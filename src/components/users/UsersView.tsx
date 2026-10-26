@@ -105,12 +105,12 @@ export const UsersView: React.FC<UsersViewProps> = ({
           <div>
             <div className="font-semibold text-white flex items-center gap-2">
               <span>Compte Administrateur Principal</span>
-              <span className="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.2 rounded font-mono">
-                ouaradtech
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold px-1.5 py-0.2 rounded font-mono">
+                Sécurisé
               </span>
             </div>
             <p className="text-slate-400 text-[11px] mt-0.5">
-              Identifiant : <code className="text-amber-300 font-mono font-bold">ouaradtech</code> · Mot de passe par défaut : <code className="text-amber-300 font-mono font-bold">Ouaradtech26@</code>
+              Accès réservé aux administrateurs autorisés · Mots de passe chiffrés et confidentiels
             </p>
           </div>
         </div>

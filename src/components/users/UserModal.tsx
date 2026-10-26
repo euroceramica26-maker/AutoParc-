@@ -86,11 +86,11 @@ export const UserModal: React.FC<UserModalProps> = ({
             <div>
               <label className="block text-slate-400 mb-1 font-medium">Mot de passe *</label>
               <input
-                type="text"
+                type="password"
                 required
                 value={motDePasse}
                 onChange={e => setMotDePasse(e.target.value)}
-                placeholder="Ex: Ouaradtech26@..."
+                placeholder="••••••••"
                 className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500"
               />
             </div>
