@@ -529,7 +529,7 @@ export const ImportExcelVehiclesModal: React.FC<ImportExcelVehiclesModalProps> =
                     <span>Instructions de mise en forme</span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Votre fichier Excel doit comporter des colonnes identifiables : <span className="text-white font-mono font-medium">Code_Parc</span>, <span className="text-white font-mono font-medium">Immatriculation / N° Série</span>, <span className="text-white font-mono font-medium">Marque</span>, <span className="text-white font-mono font-medium">Modele</span>, <span className="text-white font-mono font-medium">Type_Equipement</span> (ENGIN, POIDS_LOURD, UTILITAIRE, VL), et <span className="text-white font-mono font-medium">Compteur_Actuel</span>.
+                    Votre fichier Excel doit comporter des colonnes identifiables : <span className="text-white font-mono font-medium">Matricule</span> (ou Immatriculation), <span className="text-white font-mono font-medium">Marque</span>, <span className="text-white font-mono font-medium">Modele</span>, <span className="text-white font-mono font-medium">Type_Equipement</span> (ENGIN, POIDS_LOURD, UTILITAIRE, VL), et <span className="text-white font-mono font-medium">Compteur_Actuel</span>.
                   </p>
                   <p className="text-[11px] text-slate-400">
                     💡 Les engins TP (pelles, chargeuses) adoptent automatiquement un compteur en <span className="text-amber-400 font-medium">heures</span>, tandis que les véhicules routiers adoptent les <span className="text-amber-400 font-medium">km</span>.
@@ -649,8 +649,7 @@ export const ImportExcelVehiclesModal: React.FC<ImportExcelVehiclesModalProps> =
                       <thead className="bg-slate-900 sticky top-0 border-b border-slate-800 text-slate-400 text-[11px] uppercase tracking-wider">
                         <tr>
                           <th className="py-2.5 px-3">État</th>
-                          <th className="py-2.5 px-3">Code</th>
-                          <th className="py-2.5 px-3">Immatriculation / Série</th>
+                          <th className="py-2.5 px-3">Matricule</th>
                           <th className="py-2.5 px-3">Marque & Modèle</th>
                           <th className="py-2.5 px-3">Type</th>
                           <th className="py-2.5 px-3 text-right">Compteur</th>
@@ -673,9 +672,6 @@ export const ImportExcelVehiclesModal: React.FC<ImportExcelVehiclesModalProps> =
                               )}
                             </td>
                             <td className="py-2 px-3 font-mono font-bold text-amber-400 whitespace-nowrap">
-                              {row.code}
-                            </td>
-                            <td className="py-2 px-3 font-mono text-slate-200 whitespace-nowrap">
                               {row.immatriculation}
                             </td>
                             <td className="py-2 px-3 font-medium text-white max-w-[200px] truncate">

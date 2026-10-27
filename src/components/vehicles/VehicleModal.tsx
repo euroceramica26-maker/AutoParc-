@@ -67,12 +67,12 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
           <div className="flex items-center gap-2">
             <Truck className="w-5 h-5 text-amber-500" />
             <h2 className="text-base font-bold text-white">
-              {vehicule ? `Modifier Véhicule / Engin [${vehicule.code}]` : 'Ajouter un Véhicule ou Engin au Parc'}
+              {vehicule ? `Modifier Véhicule / Engin [${vehicule.immatriculation}]` : 'Ajouter un Véhicule ou Engin au Parc'}
             </h2>
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -80,30 +80,25 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-slate-400 mb-1 font-medium">Code Parc / Identifiant interne *</label>
-              <input
-                type="text"
-                required
-                value={code}
-                onChange={e => setCode(e.target.value)}
-                placeholder="Ex: ENG-04 ou PL-12 ou UT-05"
-                className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-400 mb-1 font-medium">Immatriculation ou N° Châssis *</label>
-              <input
-                type="text"
-                required
-                value={immatriculation}
-                onChange={e => setImmatriculation(e.target.value)}
-                placeholder="Ex: AA-123-BB ou CAT-320-S09"
-                className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono"
-              />
-            </div>
+          <div>
+            <label className="block text-slate-300 mb-1.5 font-medium">
+              Matricule (Immatriculation / N° Châssis) *
+            </label>
+            <input
+              type="text"
+              required
+              autoFocus
+              value={immatriculation}
+              onChange={e => {
+                setImmatriculation(e.target.value);
+                setCode(e.target.value);
+              }}
+              placeholder="Ex: 48291-B-26 ou CAT-320-S09"
+              className="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono text-sm tracking-wide"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">
+              Numéro de matricule ou d'immatriculation officiel de l'équipement.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

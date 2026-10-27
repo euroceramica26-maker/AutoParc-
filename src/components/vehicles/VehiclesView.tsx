@@ -107,8 +107,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
   const handleExportExcel = () => {
     const listToExport = filteredVehicules.length > 0 ? filteredVehicules : vehicules;
     const excelRows = listToExport.map(v => ({
-      'Code Parc': v.code,
-      'Immatriculation / N° Série': v.immatriculation,
+      'Matricule': v.immatriculation,
       'Marque': v.marque,
       'Modèle': v.modele,
       'Type Équipement': getTypeLabel(v.type),
@@ -132,8 +131,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
         name: 'Parc_Vehicules_Engins',
         data: excelRows,
         colWidths: [
-          { wch: 14 },
-          { wch: 24 },
+          { wch: 22 },
           { wch: 18 },
           { wch: 30 },
           { wch: 24 },
@@ -158,8 +156,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
   const handleExportCSV = () => {
     const listToExport = filteredVehicules.length > 0 ? filteredVehicules : vehicules;
     const headers = [
-      'Code_Parc',
-      'Immatriculation_Serie',
+      'Matricule',
       'Marque',
       'Modele',
       'Type',
@@ -178,7 +175,6 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
     ];
 
     const rows = listToExport.map(v => [
-      v.code,
       v.immatriculation,
       v.marque,
       v.modele,
@@ -261,7 +257,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Rechercher par immatriculation, code parc, marque, conducteur, site..."
+              placeholder="Rechercher par matricule, marque, conducteur, site..."
               className="w-full bg-slate-800/80 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
           </div>
@@ -312,7 +308,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-800/40 text-slate-400">
-                <th className="py-3 px-4 font-medium">Code & Immat</th>
+                <th className="py-3 px-4 font-medium">Matricule</th>
                 <th className="py-3 px-4 font-medium">Marque & Modèle</th>
                 <th className="py-3 px-4 font-medium">Type</th>
                 <th className="py-3 px-4 font-medium">Compteur Actuel</th>
@@ -335,19 +331,15 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
 
                   return (
                     <tr key={vehicule.id} className="hover:bg-slate-800/30 transition-colors">
-                      {/* Code & Immatriculation */}
+                      {/* Matricule */}
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => onOpenDetailModal(vehicule)}
-                            className="font-mono font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer text-left"
-                          >
-                            {vehicule.code}
-                          </button>
-                          <span className="font-mono text-[11px] text-slate-400 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700/80">
-                            {vehicule.immatriculation}
-                          </span>
-                        </div>
+                        <button
+                          onClick={() => onOpenDetailModal(vehicule)}
+                          className="font-mono font-bold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer text-left tracking-wide"
+                          title="Consulter la fiche du véhicule"
+                        >
+                          {vehicule.immatriculation}
+                        </button>
                       </td>
 
                       {/* Marque & Modèle */}
@@ -482,7 +474,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
       <ConfirmDeleteModal
         isOpen={!!vehiculeToDelete}
         title="Supprimer l'équipement"
-        message={`Confirmez-vous la suppression définitive du matériel [${vehiculeToDelete?.code}] ${vehiculeToDelete?.marque} ${vehiculeToDelete?.modele} (${vehiculeToDelete?.immatriculation}) du parc ?`}
+        message={`Confirmez-vous la suppression définitive du véhicule / engin matricule "${vehiculeToDelete?.immatriculation}" (${vehiculeToDelete?.marque} ${vehiculeToDelete?.modele}) du parc ?`}
         itemDetails={vehiculeToDelete ? `Compteur : ${vehiculeToDelete.compteurActuel} ${vehiculeToDelete.compteurType} · Affectation : ${vehiculeToDelete.siteAffectation}` : undefined}
         onConfirm={() => {
           if (vehiculeToDelete) {
