@@ -176,16 +176,18 @@ export const Header: React.FC<HeaderProps> = ({
           <Database className="w-4 h-4" />
         </button>
 
-        {/* Menu Utilisateurs raccourci */}
-        <button
-          onClick={() => onSelectTab('utilisateurs')}
-          className={`p-2 rounded-lg transition-colors cursor-pointer ${
-            currentTab === 'utilisateurs' ? 'text-amber-400 bg-slate-800' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-          }`}
-          title="Gérer les utilisateurs et permissions"
-        >
-          <Users className="w-4 h-4" />
-        </button>
+        {/* Menu Utilisateurs raccourci (réservé exclusivement à l'Admin) */}
+        {currentUser?.role === 'ADMIN' && (
+          <button
+            onClick={() => onSelectTab('utilisateurs')}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${
+              currentTab === 'utilisateurs' ? 'text-amber-400 bg-slate-800' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Gérer les utilisateurs et droits d'accès (Admin)"
+          >
+            <Users className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Fleet Manager Profile Avatar & Login Switcher */}
         <div className="flex items-center gap-2 pl-2 border-l border-slate-800">

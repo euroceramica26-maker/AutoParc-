@@ -77,6 +77,22 @@ export const UsersView: React.FC<UsersViewProps> = ({
     }
   };
 
+  if (currentUser?.role !== 'ADMIN') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-slate-900/40 border border-slate-800 rounded-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-4">
+          <Shield className="w-8 h-8" />
+        </div>
+        <h2 className="text-base font-bold text-white mb-2">
+          Accès Restreint au Compte Administrateur
+        </h2>
+        <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+          La gestion des utilisateurs, des comptes et des droits d'accès est réservée exclusivement aux administrateurs. Votre compte actuel ({currentUser?.nom || 'Utilisateur'} - {currentUser?.role}) ne dispose pas des privilèges requis.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

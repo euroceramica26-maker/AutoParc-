@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Shield, AlertTriangle } from 'lucide-react';
 import { FleetProvider, useFleet } from './context/FleetContext';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -38,6 +39,13 @@ function FleetApp() {
   } = useFleet();
 
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
+
+  // Redirection automatique si un utilisateur non-admin tente d'accéder au module Utilisateurs
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'ADMIN' && currentTab === 'utilisateurs') {
+      setCurrentTab('dashboard');
+    }
+  }, [currentUser, currentTab]);
 
   // Modals state
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
@@ -220,10 +228,30 @@ function FleetApp() {
           )}
 
           {currentTab === 'utilisateurs' && (
-            <UsersView 
-              onOpenAddUser={handleOpenNewUser}
-              onOpenEditUser={handleOpenEditUser}
-            />
+            currentUser?.role === 'ADMIN' ? (
+              <UsersView 
+                onOpenAddUser={handleOpenNewUser}
+                onOpenEditUser={handleOpenEditUser}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center min-h-[55vh] text-center p-8 bg-slate-900/40 border border-slate-800 rounded-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-4">
+                  <Shield className="w-8 h-8" />
+                </div>
+                <h2 className="text-base font-bold text-white mb-2">
+                  Accès Restreint au Compte Administrateur
+                </h2>
+                <p className="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+                  Le module de gestion des utilisateurs et des droits d'accès est strictement réservé au compte Administrateur. Votre profil actuel ({currentUser?.nom} - {currentUser?.role}) ne dispose pas des droits nécessaires.
+                </p>
+                <button
+                  onClick={() => setCurrentTab('dashboard')}
+                  className="px-4 py-2 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg transition-colors cursor-pointer shadow-sm"
+                >
+                  Retourner au Tableau de Bord
+                </button>
+              </div>
+            )
           )}
         </main>
       </div>

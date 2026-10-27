@@ -22,7 +22,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onSelectTab
 }) => {
-  const { statsGlobales, reparations, pieces, alertes, users } = useFleet();
+  const { statsGlobales, reparations, pieces, alertes, users, currentUser } = useFleet();
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   const activeRepairsCount = reparations.filter(r => r.statut === 'EN_COURS' || r.statut === 'EN_ATTENTE_PIECES').length;
   const criticalPartsCount = pieces.filter(p => p.stockActuel <= p.stockMin).length;
@@ -75,12 +76,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: BarChart3,
       badge: null
     },
-    {
+    ...(isAdmin ? [{
       id: 'utilisateurs',
-      label: 'Utilisateurs & Accès',
+      label: 'Utilisateurs & Droits',
       icon: Users,
       badge: `${users.length}`
-    }
+    }] : [])
   ];
 
   return (

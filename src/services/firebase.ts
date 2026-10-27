@@ -1,18 +1,20 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// CRITICAL: Specify firestoreDatabaseId and enable experimentalForceLongPolling to avoid backend timeouts in sandboxed iframes
-export const db = initializeFirestore(
-  app,
-  {
+// Initialize Firestore with long-polling to prevent 10s WebChannel streaming timeouts in browser iframes & Cloud Run proxies
+try {
+  initializeFirestore(app, {
     experimentalForceLongPolling: true,
-  },
-  firebaseConfig.firestoreDatabaseId || undefined
-);
+  }, firebaseConfig.firestoreDatabaseId);
+} catch {
+  // Already initialized or fallback
+}
+
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -124,18 +126,38 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+let activeConnectionPromise: Promise<boolean> | null = null;
+let hasVerifiedConnection = false;
+
 export async function testConnection(): Promise<boolean> {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    console.info('Firebase Firestore connection verified.');
-    return true;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+  if (hasVerifiedConnection) return true;
+  if (activeConnectionPromise) return activeConnectionPromise;
+
+  activeConnectionPromise = (async () => {
+    try {
+      await getDocFromServer(doc(db, 'test', 'connection'));
+      console.info('Firebase Firestore connection verified.');
+      hasVerifiedConnection = true;
+      return true;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('the client is offline')) {
+        console.error('Please check your Firebase configuration.');
+      }
+      return false;
+    } finally {
+      activeConnectionPromise = null;
     }
-    return false;
-  }
+  })();
+
+  return activeConnectionPromise;
 }
 
 testConnection();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    testConnection();
+  });
+}
+
 
