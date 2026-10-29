@@ -9,7 +9,8 @@ import {
   UserCheck,
   Shield,
   Key,
-  Cloud
+  Cloud,
+  Sparkles
 } from 'lucide-react';
 import { useFleet } from '../context/FleetContext';
 
@@ -20,6 +21,7 @@ interface HeaderProps {
   onOpenSystemModal: () => void;
   onOpenLoginModal: () => void;
   onSelectTab: (tab: string) => void;
+  onOpenScanInvoice?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,7 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNewVehicule,
   onOpenSystemModal,
   onOpenLoginModal,
-  onSelectTab
+  onSelectTab,
+  onOpenScanInvoice
 }) => {
   const { statsGlobales, currentUser, logout } = useFleet();
 
@@ -155,6 +158,18 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
           )}
         </button>
+
+        {/* Scanner Facture OCR IA */}
+        {onOpenScanInvoice && (
+          <button
+            onClick={onOpenScanInvoice}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg transition-colors cursor-pointer"
+            title="Scanner une facture ou reçu de pièces (OCR IA)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Scanner Facture</span>
+          </button>
+        )}
 
         {/* Google Drive GED */}
         <button

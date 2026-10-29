@@ -18,7 +18,8 @@ import {
   FileSpreadsheet,
   FileText,
   Cloud,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { Reparation, StatutReparation, TypeReparation, PrioriteReparation } from '../../types/fleet';
@@ -36,12 +37,14 @@ interface RepairsViewProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (reparation: Reparation) => void;
   onOpenDetailModal: (reparation: Reparation) => void;
+  onOpenScanInvoice?: () => void;
 }
 
 export const RepairsView: React.FC<RepairsViewProps> = ({
   onOpenAddModal,
   onOpenEditModal,
-  onOpenDetailModal
+  onOpenDetailModal,
+  onOpenScanInvoice
 }) => {
   const { 
     reparations, 
@@ -237,6 +240,17 @@ export const RepairsView: React.FC<RepairsViewProps> = ({
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
           </button>
+
+          {onOpenScanInvoice && (
+            <button
+              onClick={onOpenScanInvoice}
+              className="px-3.5 py-1.5 text-xs font-semibold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Scanner une facture ou devis réparation (OCR IA)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Scanner Facture (OCR)</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenAddModal}

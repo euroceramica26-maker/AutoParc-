@@ -13,7 +13,8 @@ import {
   Boxes,
   MapPin,
   CheckCircle2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Sparkles
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { PieceRechange, CategoriePiece } from '../../types/fleet';
@@ -26,6 +27,7 @@ interface PartsViewProps {
   onOpenEditModal: (piece: PieceRechange) => void;
   onOpenRestockModal: (piece: PieceRechange) => void;
   onOpenImportExcel: () => void;
+  onOpenScanInvoice?: () => void;
 }
 
 const CATEGORIES: string[] = [
@@ -44,7 +46,8 @@ export const PartsView: React.FC<PartsViewProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onOpenRestockModal,
-  onOpenImportExcel
+  onOpenImportExcel,
+  onOpenScanInvoice
 }) => {
   const { pieces, mouvements, deletePiece, statsGlobales } = useFleet();
 
@@ -261,6 +264,17 @@ export const PartsView: React.FC<PartsViewProps> = ({
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
           </button>
+
+          {onOpenScanInvoice && (
+            <button
+              onClick={onOpenScanInvoice}
+              className="px-3.5 py-1.5 text-xs font-semibold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Scanner une facture fournisseur ou bon d'achat (OCR IA)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Scanner Facture (OCR)</span>
+            </button>
+          )}
 
           <button
             onClick={onOpenAddModal}

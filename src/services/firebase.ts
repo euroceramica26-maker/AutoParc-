@@ -1,14 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { initializeFirestore, getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, memoryLocalCache, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with long-polling to prevent 10s WebChannel streaming timeouts in browser iframes & Cloud Run proxies
+// Configure in-memory cache to prevent IndexedDB partition/locking timeouts in iframe previews
 try {
   initializeFirestore(app, {
-    experimentalForceLongPolling: true,
+    localCache: memoryLocalCache(),
   }, firebaseConfig.firestoreDatabaseId);
 } catch {
   // Already initialized or fallback

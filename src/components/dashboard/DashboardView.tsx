@@ -12,7 +12,8 @@ import {
   TrendingUp,
   Package,
   Layers,
-  Fuel
+  Fuel,
+  Sparkles
 } from 'lucide-react';
 import { useFleet } from '../../context/FleetContext';
 import { Reparation, AlerteMaintenance, PieceRechange, Vehicule } from '../../types/fleet';
@@ -24,6 +25,7 @@ interface DashboardViewProps {
   onOpenNewVehicule: () => void;
   onOpenRestockPiece: (piece: PieceRechange) => void;
   onViewVehiculeDetail: (vehicule: Vehicule) => void;
+  onOpenScanInvoice?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -31,7 +33,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenNewOT,
   onOpenNewVehicule,
   onOpenRestockPiece,
-  onViewVehiculeDetail
+  onViewVehiculeDetail,
+  onOpenScanInvoice
 }) => {
   const { 
     vehicules, 
@@ -116,6 +119,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <CalendarCheck2 className="w-3.5 h-3.5 text-amber-400" />
             <span>Voir le calendrier d'entretien</span>
           </button>
+          {onOpenScanInvoice && (
+            <button
+              onClick={onOpenScanInvoice}
+              className="px-3 py-1.5 text-xs font-semibold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Scanner une facture ou reçu de pièces (OCR IA)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Scanner Facture (OCR)</span>
+            </button>
+          )}
           <button
             onClick={onOpenNewOT}
             className="px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"

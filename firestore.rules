@@ -33,8 +33,7 @@ service cloud.firestore {
 
     // Connection testing endpoint
     match /test/{testDoc} {
-      allow read: if true;
-      allow write: if isSignedIn();
+      allow read, write: if true;
     }
 
     // Admin collection

@@ -23,11 +23,14 @@ import { UserModal } from './components/users/UserModal';
 import { GoogleDriveView } from './components/drive/GoogleDriveView';
 import { LoginModal } from './components/auth/LoginModal';
 import { SystemDataModal } from './components/common/SystemDataModal';
+import { InvoiceScannerModal } from './components/invoices/InvoiceScannerModal';
 import { Vehicule, PieceRechange, Reparation, FleetUser } from './types/fleet';
+import { ScannedInvoice } from './types/invoice';
 
 function FleetApp() {
   const { 
     currentUser,
+    vehicules,
     addVehicule, 
     updateVehicule, 
     addPiece, 
@@ -39,6 +42,7 @@ function FleetApp() {
   } = useFleet();
 
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [isInvoiceScannerOpen, setIsInvoiceScannerOpen] = useState(false);
 
   // Redirection automatique si un utilisateur non-admin tente d'accéder au module Utilisateurs
   useEffect(() => {
@@ -130,6 +134,58 @@ function FleetApp() {
     }
   };
 
+  // Handler pour convertir une facture scannée en Ordre de Travail (OT)
+  const handleApplyInvoiceToOT = (invoice: ScannedInvoice, vehiculeId?: string) => {
+    const targetVehiculeId = vehiculeId || (vehicules[0]?.id || '');
+    const v = vehicules.find(item => item.id === targetVehiculeId);
+    
+    const prefilledPieces = invoice.items
+      .filter(item => !item.category?.toLowerCase().includes('main d\'œuvre'))
+      .map(item => ({
+        pieceId: item.matchedPieceId || `temp_${Date.now()}_${Math.random()}`,
+        reference: item.reference || 'REF-SCAN',
+        designation: item.description,
+        quantite: Number(item.quantity) || 1,
+        prixUnitaire: Number(item.unitPrice) || 0,
+        prixTotal: Number(item.totalPrice) || 0
+      }));
+
+    const laborItem = invoice.items.find(item => 
+      item.category?.toLowerCase().includes('main d\'œuvre') ||
+      item.description.toLowerCase().includes('main d\'oeuvre') ||
+      item.description.toLowerCase().includes('pose') ||
+      item.description.toLowerCase().includes('forfait')
+    );
+
+    const laborCost = laborItem ? Number(laborItem.totalPrice) : 150;
+    const piecesCost = prefilledPieces.reduce((sum, p) => sum + p.prixTotal, 0);
+
+    const dummyReparation: Reparation = {
+      id: '',
+      numeroOT: '',
+      vehiculeId: targetVehiculeId,
+      titre: `Entretien suite Facture ${invoice.invoiceNumber || 'sans n°'} (${invoice.vendor})`,
+      description: `Prestation & pièces selon facture ${invoice.invoiceNumber || ''} de ${invoice.vendor} du ${invoice.date}.\n${invoice.notes || ''}`.trim(),
+      type: 'CORRECTIVE',
+      priorite: 'NORMALE',
+      statut: 'PLANIFIEE',
+      technicien: invoice.vendor || 'Atelier Externe',
+      dateDeclaration: invoice.date || new Date().toISOString().split('T')[0],
+      datePrevue: invoice.date || new Date().toISOString().split('T')[0],
+      compteurReleve: v?.compteurActuel || 0,
+      piecesUtilisees: prefilledPieces,
+      coutPieces: piecesCost,
+      coutMainOeuvre: laborCost,
+      coutTotal: piecesCost + laborCost,
+      remarques: `Facture scannée OCR : ${invoice.vendor} (Total : ${invoice.totalAmount} ${invoice.currency})`
+    };
+
+    setEditingReparation(dummyReparation);
+    setPreselectedVehiculeId(targetVehiculeId);
+    setCurrentTab('reparations');
+    setIsRepairModalOpen(true);
+  };
+
   // Handlers pour Utilisateurs
   const handleOpenNewUser = () => {
     setEditingUser(null);
@@ -163,6 +219,7 @@ function FleetApp() {
         onOpenSystemModal={() => setIsSystemModalOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onSelectTab={setCurrentTab}
+        onOpenScanInvoice={() => setIsInvoiceScannerOpen(true)}
       />
 
       {/* Workspace Area: Sidebar + Main Content Viewport */}
@@ -182,6 +239,7 @@ function FleetApp() {
               onOpenNewVehicule={handleOpenNewVehicule}
               onOpenRestockPiece={p => setRestockPiece(p)}
               onViewVehiculeDetail={v => setDetailedVehicule(v)}
+              onOpenScanInvoice={() => setIsInvoiceScannerOpen(true)}
             />
           )}
 
@@ -201,6 +259,7 @@ function FleetApp() {
               onOpenEditModal={handleOpenEditPiece}
               onOpenRestockModal={p => setRestockPiece(p)}
               onOpenImportExcel={() => setIsImportExcelOpen(true)}
+              onOpenScanInvoice={() => setIsInvoiceScannerOpen(true)}
             />
           )}
 
@@ -209,6 +268,7 @@ function FleetApp() {
               onOpenAddModal={() => handleOpenNewOT()}
               onOpenEditModal={handleOpenEditOT}
               onOpenDetailModal={r => setDetailedReparation(r)}
+              onOpenScanInvoice={() => setIsInvoiceScannerOpen(true)}
             />
           )}
 
@@ -352,6 +412,13 @@ function FleetApp() {
       <SystemDataModal
         isOpen={isSystemModalOpen}
         onClose={() => setIsSystemModalOpen(false)}
+      />
+
+      {/* Modal Scanner Facture OCR IA */}
+      <InvoiceScannerModal
+        isOpen={isInvoiceScannerOpen}
+        onClose={() => setIsInvoiceScannerOpen(false)}
+        onApplyToOT={handleApplyInvoiceToOT}
       />
     </div>
   );
